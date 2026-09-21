@@ -9,14 +9,7 @@
         .container { max-width: 600px; margin: 0 auto; }
         h2 { text-align: center; color: #4da6ff; margin-bottom: 20px; }
         
-        .welcome-card {
-            background-color: #111827;
-            border: 1px solid #1f2937;
-            border-radius: 8px;
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+        .welcome-card { background-color: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; text-align: center; }
         .welcome-card h3 { color: #60a5fa; margin-top: 0; margin-bottom: 8px; font-size: 18px; }
         .welcome-card p { color: #9ca3af; font-size: 14px; margin: 0; line-height: 1.5; }
 
@@ -42,7 +35,6 @@
         .received { background-color: #1f2937; color: #e0e6ed; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #374151; }
         .system { color: #9ca3af; text-align: center; font-style: italic; align-self: center; font-size: 13px; margin: 8px 0; }
         
-        /* Reply Option UI */
         .reply-box { background: rgba(0, 0, 0, 0.3); border-left: 3px solid #60a5fa; padding: 4px 8px; font-size: 12px; margin-bottom: 6px; border-radius: 4px; color: #9ca3af; }
         .reply-btn { font-size: 11px; opacity: 0.8; cursor: pointer; margin-top: 4px; display: inline-block; text-decoration: underline; }
         .reply-btn:hover { opacity: 1; }
@@ -57,7 +49,6 @@
         #recording-controls { display: none; align-items: center; gap: 8px; flex: 1; }
         #timer { color: #ef4444; font-weight: bold; font-family: monospace; font-size: 16px; margin: 0 10px; }
 
-        /* Media Preview Modal */
         #media-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; }
         #media-preview-container { max-width: 80%; max-height: 60%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
         #media-preview-container img, #media-preview-container video { max-width: 100%; max-height: 50vh; border-radius: 8px; }
@@ -88,7 +79,6 @@
         <div id="chat" style="display: none;"></div>
 
         <div id="message-form">
-            <!-- Active Reply Preview Bar -->
             <div id="reply-bar">
                 <span id="reply-bar-text">Replying to...</span>
                 <button onclick="cancelReply()" style="background: transparent; color: #ef4444; padding: 2px 6px; margin: 0;">✕</button>
@@ -97,7 +87,6 @@
             <div id="input-row">
                 <div id="text-controls" style="display: flex; flex: 1; align-items: center;">
                     <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
-                    <!-- Photo & Video File Input -->
                     <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" onchange="handleMediaSelect(event)">
                     <button class="btn-icon" onclick="document.getElementById('mediaInput').click()" title="Send Image/Video">📁</button>
                     <button class="btn-icon" onclick="startRecording()" title="Record Voice">🎤</button>
@@ -114,7 +103,6 @@
         </div>
     </div>
 
-    <!-- Media Preview Modal -->
     <div id="media-modal">
         <div id="media-preview-container"></div>
         <div>
@@ -196,7 +184,6 @@
             }
         }
 
-        /* Reply Logic */
         function setReply(text) {
             activeReply = text;
             document.getElementById('reply-bar-text').innerText = `Replying to: ${text}`;
@@ -208,7 +195,6 @@
             document.getElementById('reply-bar').style.display = 'none';
         }
 
-        /* Media Handling (Image & Video Preview) */
         function handleMediaSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -249,11 +235,17 @@
             document.getElementById('media-modal').style.display = 'none';
         }
 
-        /* Voice Recording */
         async function startRecording() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
+                
+                // ബ്രൗസർ സപ്പോർട്ട് ചെയ്യുന്ന ഓഡിയോ ഫോർമാറ്റ് കണ്ടെത്തുന്നു
+                let mimeType = 'audio/webm';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'audio/mp4'; 
+                }
+
+                mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
                 audioChunks = [];
                 isCancelled = false;
 
@@ -264,7 +256,7 @@
                     stream.getTracks().forEach(track => track.stop());
 
                     if (!isCancelled && audioChunks.length > 0) {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioBlob = new Blob(audioChunks, { type: mimeType });
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             socket.emit('send-message', { 
@@ -338,7 +330,6 @@
             document.getElementById('timer').innerText = '00:00';
         }
 
-        /* Message Reception */
         socket.on('receive-message', (data) => {
             const chat = document.getElementById('chat');
             const messageClass = (data.sender === socket.id) ? 'sent' : (data.sender === 'System' ? 'system' : 'received');
