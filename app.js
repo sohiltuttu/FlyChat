@@ -48,3 +48,4 @@ async function startRecording() {
         alert('Microphone access denied or not available.');
     }
 }
+
