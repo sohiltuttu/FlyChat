@@ -13,11 +13,11 @@
         .welcome-card h3 { color: #60a5fa; margin-top: 0; margin-bottom: 8px; font-size: 18px; }
         .welcome-card p { color: #9ca3af; font-size: 14px; margin: 0; line-height: 1.5; }
 
-        #warning-msg { color: #f59e0b; text-align: center; margin-bottom: 10px; display: none; font-size: 14px; }
+        #warning-msg { text-align: center; margin-bottom: 10px; display: none; font-size: 14px; font-weight: bold; }
         #error-msg { color: #ef4444; text-align: center; margin-bottom: 15px; display: none; font-size: 14px; font-weight: bold; padding: 10px; background-color: #7f1d1d; border-radius: 6px; border: 1px solid #b91c1c; }
         
         #room-selection { display: flex; justify-content: center; background-color: #111827; padding: 20px; border-radius: 8px; border: 1px solid #1f2937; margin-bottom: 15px; }
-        #roomInput { padding: 12px; border: 1px solid #374151; border-radius: 6px; background-color: #1f2937; color: #fff; margin-right: 10px; width: 200px; outline: none; }
+        #roomInput { padding: 12px; border: 1px solid #374151; border-radius: 6px; background-color: #1f2937; color: #fff; margin-right: 10px; width: 220px; outline: none; }
 
         button { padding: 10px 14px; border: none; border-radius: 6px; background-color: #2563eb; color: #fff; cursor: pointer; font-weight: bold; transition: background 0.2s; margin-left: 4px; }
         button:hover { background-color: #1d4ed8; }
@@ -40,7 +40,7 @@
         .reply-btn:hover { opacity: 1; }
 
         #reply-bar { display: none; background-color: #1f2937; border: 1px solid #374151; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; justify-content: space-between; align-items: center; font-size: 13px; }
-        #reply-bar-text { color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
+        #reply-bar-text { color: #9ca3af; white-space: overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
 
         #message-form { display: none; flex-direction: column; background-color: #111827; padding: 10px; border-radius: 8px; border: 1px solid #1f2937; }
         #input-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
@@ -51,7 +51,9 @@
 
         #media-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; }
         #media-preview-container { max-width: 80%; max-height: 60%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
-        #media-preview-container img, #media-preview-container video { max-width: 100%; max-height: 50vh; border-radius: 8px; }
+        #media-preview-container img, #media-preview-container video { max-width: 100%; max-height: 50vh; border-radius: 8px; object-fit: contain; }
+
+        #call-controls { display: flex; align-items: center; gap: 8px; }
     </style>
 </head>
 <body>
@@ -63,16 +65,21 @@
             <p>Enter a unique room code below to create or join a chat room.</p>
         </div>
 
+        <div id="warning-msg"></div>
+        <div id="error-msg"></div>
+
         <div id="room-selection">
             <input type="text" id="roomInput" placeholder="Enter Room Code">
             <button onclick="joinRoom()">Join / Create</button>
         </div>
 
-        <div id="warning-msg"></div>
-        <div id="error-msg"></div>
-
         <div id="chat-header">
             <span id="room-display" style="font-weight: bold; color: #60a5fa;"></span>
+            <div id="call-controls">
+                <button id="start-call-btn" onclick="startCall()">📞 Call</button>
+                <button id="mute-btn" class="btn-icon" onclick="toggleMute()" style="display:none;">🎤 Mute</button>
+                <button id="end-call-btn" class="btn-danger" onclick="endCall()" style="display:none;">Hang Up</button>
+            </div>
             <button class="btn-danger" onclick="leaveRoom()">Exit Room</button>
         </div>
 
@@ -111,6 +118,8 @@
         </div>
     </div>
 
+    <audio id="remote-audio" autoplay></audio>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
@@ -124,13 +133,53 @@
         let activeReply = null;
         let selectedMedia = { data: null, type: null };
 
+        let localStream;
+        let peerConnection;
+        const config = {
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        };
+
+        const remoteAudio = document.getElementById('remote-audio');
+        const startCallBtn = document.getElementById('start-call-btn');
+        const muteBtn = document.getElementById('mute-btn');
+        const endCallBtn = document.getElementById('end-call-btn');
+
+        // Color-Coded Security Indicator
+        const roomInput = document.getElementById('roomInput');
+        const warningMsg = document.getElementById('warning-msg');
+
+        roomInput.addEventListener('input', () => {
+            const code = roomInput.value.trim();
+            const hasAlpha = /[a-zA-Z]/.test(code);
+            const hasNumber = /[0-9]/.test(code);
+            const hasSpecial = /[^A-Za-z0-9]/.test(code);
+            const hasOnlyLetters = /^[a-zA-Z]+$/.test(code);
+
+            if (code.length === 0) {
+                warningMsg.style.display = 'none';
+            } else if (hasOnlyLetters && code.length <= 4) {
+                warningMsg.innerText = "⚠️ Weak (Letters only)";
+                warningMsg.style.display = 'block';
+                warningMsg.style.color = '#f59e0b'; // Yellow
+            } else if (code.length >= 5 && hasAlpha && hasNumber && !hasSpecial) {
+                warningMsg.innerText = "🔵 Moderate (Letters & Numbers)";
+                warningMsg.style.display = 'block';
+                warningMsg.style.color = '#60a5fa'; // Blue
+            } else if (code.length >= 6 && hasAlpha && hasNumber && hasSpecial) {
+                warningMsg.innerText = "🔒 Perfect! You are secure.";
+                warningMsg.style.display = 'block';
+                warningMsg.style.color = '#10b981'; // Green
+            } else if (code.length > 0) {
+                warningMsg.innerText = "ℹ️ Combine Letters, Numbers & Symbols for better security.";
+                warningMsg.style.display = 'block';
+                warningMsg.style.color = '#9ca3af';
+            }
+        });
+
         function joinRoom() {
-            const roomCode = document.getElementById('roomInput').value.trim();
+            const roomCode = roomInput.value.trim();
             const errorDiv = document.getElementById('error-msg');
-            const warningDiv = document.getElementById('warning-msg');
-            
             errorDiv.style.display = 'none';
-            warningDiv.style.display = 'none';
 
             if (!roomCode) return;
 
@@ -139,11 +188,15 @@
         }
 
         function leaveRoom() {
-            if (currentRoom) socket.emit('leave-room', currentRoom);
+            if (currentRoom) {
+                endCall();
+                socket.emit('leave-room', currentRoom);
+            }
         }
 
         socket.on('joined', (room) => {
             document.getElementById('welcome-box').style.display = 'none';
+            warningMsg.style.display = 'none';
             document.getElementById('room-selection').style.display = 'none';
             document.getElementById('chat-header').style.display = 'flex';
             document.getElementById('chat').style.display = 'flex';
@@ -199,6 +252,12 @@
             const file = event.target.files[0];
             if (!file) return;
 
+            if (file.size > 200 * 1024 * 1024) {
+                alert("File size exceeds 200MB limit!");
+                event.target.value = '';
+                return;
+            }
+
             const reader = new FileReader();
             const isVideo = file.type.startsWith('video/');
             selectedMedia.type = isVideo ? 'video' : 'image';
@@ -238,8 +297,6 @@
         async function startRecording() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
-                // ബ്രൗസർ സപ്പോർട്ട് ചെയ്യുന്ന ഓഡിയോ ഫോർമാറ്റ് കണ്ടെത്തുന്നു
                 let mimeType = 'audio/webm';
                 if (!MediaRecorder.isTypeSupported(mimeType)) {
                     mimeType = 'audio/mp4'; 
@@ -328,6 +385,105 @@
             document.getElementById('text-controls').style.display = 'flex';
             document.getElementById('pauseBtn').innerText = '⏸️';
             document.getElementById('timer').innerText = '00:00';
+        }
+
+        async function startCall() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                createPeerConnection();
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                socket.emit('call-user', { offer, room: currentRoom });
+                showCallUI();
+            } catch (err) {
+                alert('Could not access microphone.');
+            }
+        }
+
+        socket.on('call-made', async (data) => {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                createPeerConnection();
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                socket.emit('make-answer', { answer, room: currentRoom });
+                showCallUI();
+            } catch (err) {
+                alert('Could not access microphone.');
+            }
+        });
+
+        socket.on('answer-made', async (data) => {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+        });
+
+        socket.on('ice-candidate', (candidate) => {
+            if (peerConnection) {
+                peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+        });
+
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(config);
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('ice-candidate', { candidate: event.candidate, room: currentRoom });
+                }
+            };
+
+            peerConnection.ontrack = (event) => {
+                remoteAudio.srcObject = event.streams[0];
+            };
+        }
+
+        function toggleMute() {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                audioTrack.enabled = !audioTrack.enabled;
+                muteBtn.innerText = audioTrack.enabled ? '🎤 Mute' : '🔇 Unmute';
+            }
+        }
+
+        function endCall() {
+            socket.emit('end-call', { room: currentRoom });
+            closeCall();
+        }
+
+        socket.on('call-ended', () => {
+            closeCall();
+        });
+
+        function closeCall() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            resetCallUI();
+        }
+
+        function showCallUI() {
+            startCallBtn.style.display = 'none';
+            muteBtn.style.display = 'inline-block';
+            endCallBtn.style.display = 'inline-block';
+        }
+
+        function resetCallUI() {
+            startCallBtn.style.display = 'inline-block';
+            muteBtn.style.display = 'none';
+            endCallBtn.style.display = 'none';
+            muteBtn.innerText = '🎤 Mute';
         }
 
         socket.on('receive-message', (data) => {
