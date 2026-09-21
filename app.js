@@ -1,51 +1,41 @@
-async function startRecording() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        // Browser compatible mimeType detect ചെയ്യുന്നു
-        let options = {};
-        if (MediaRecorder.isTypeSupported('audio/webm')) {
-            options = { mimeType: 'audio/webm' };
-        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-            options = { mimeType: 'audio/mp4' };
+const express = require('express');
+const app = express();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
+
+app.use(express.static('public'));
+
+io.on('connection', (socket) => {
+    socket.on('join-room', (roomId) => {
+        const room = io.sockets.adapter.rooms.get(roomId);
+        const numClients = room ? room.size : 0;
+
+        if (numClients >= 2) {
+            socket.emit('room-full', 'Room is full! Maximum 2 users allowed.');
+            return;
         }
 
-        mediaRecorder = new MediaRecorder(stream, options);
-        audioChunks = [];
-        isCancelled = false;
+        socket.join(roomId);
+        socket.emit('joined', roomId);
+        socket.to(roomId).emit('receive-message', { sender: 'System', text: 'Another user joined the room.' });
+    });
 
-        mediaRecorder.ondataavailable = event => {
-            if (event.data.size > 0) audioChunks.push(event.data);
-        };
+    socket.on('leave-room', (roomId) => {
+        socket.leave(roomId);
+        socket.emit('left-room');
+        socket.to(roomId).emit('receive-message', { sender: 'System', text: 'The other user left the room.' });
+    });
 
-        mediaRecorder.onstop = () => {
-            clearInterval(timerInterval);
-            stream.getTracks().forEach(track => track.stop());
+    socket.on('send-message', (data) => {
+        io.to(data.room).emit('receive-message', { 
+            sender: socket.id, 
+            text: data.message,
+            type: data.type 
+        });
+    });
+});
 
-            if (!isCancelled && audioChunks.length > 0) {
-                const mimeType = mediaRecorder.mimeType || 'audio/webm';
-                const audioBlob = new Blob(audioChunks, { type: mimeType });
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    socket.emit('send-message', { room: currentRoom, message: e.target.result, type: 'audio' });
-                };
-                reader.readAsDataURL(audioBlob);
-            }
-            resetRecordingUI();
-        };
-
-        mediaRecorder.start();
-        secondsElapsed = 0;
-        updateTimerDisplay();
-        timerInterval = setInterval(() => {
-            secondsElapsed++;
-            updateTimerDisplay();
-        }, 1000);
-
-        document.getElementById('text-controls').style.display = 'none';
-        document.getElementById('recording-controls').style.display = 'flex';
-    } catch (err) {
-        alert('Microphone access denied or not available.');
-    }
-}
-
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
