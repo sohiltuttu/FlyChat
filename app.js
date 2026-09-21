@@ -27,7 +27,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('send-message', (data) => {
-        io.to(data.room).emit('receive-message', { sender: socket.id, text: data.message });
+        io.to(data.room).emit('receive-message', { 
+            sender: socket.id, 
+            text: data.message,
+            type: data.type 
+        });
     });
 });
 
