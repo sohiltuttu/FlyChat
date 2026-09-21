@@ -1,7 +1,9 @@
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const io = require('socket.io')(http, {
+    maxHttpBufferSize: 200 * 1024 * 1024 // 200 MB
+});
 
 app.use(express.static('public'));
 
