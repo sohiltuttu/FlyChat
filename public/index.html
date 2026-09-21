@@ -35,18 +35,32 @@
 
         #chat-header { display: none; justify-content: space-between; align-items: center; background-color: #111827; padding: 10px 15px; border-radius: 8px 8px 0 0; border-bottom: 1px solid #1f2937; }
         #chat { border: 1px solid #1f2937; height: 400px; overflow-y: auto; padding: 20px; border-radius: 0 0 8px 8px; background-color: #111827; margin-bottom: 15px; display: flex; flex-direction: column; }
-        .message { margin-bottom: 12px; padding: 10px 16px; border-radius: 18px; max-width: 70%; word-wrap: break-word; font-size: 15px; }
-        .message img { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; }
+        .message { margin-bottom: 12px; padding: 10px 16px; border-radius: 18px; max-width: 70%; word-wrap: break-word; font-size: 15px; position: relative; }
+        .message img, .message video { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; }
         .message audio { max-width: 100%; margin-top: 5px; display: block; }
         .sent { background-color: #2563eb; color: #ffffff; align-self: flex-end; border-bottom-right-radius: 4px; }
         .received { background-color: #1f2937; color: #e0e6ed; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #374151; }
         .system { color: #9ca3af; text-align: center; font-style: italic; align-self: center; font-size: 13px; margin: 8px 0; }
         
-        #message-form { display: none; justify-content: space-between; align-items: center; background-color: #111827; padding: 10px; border-radius: 8px; border: 1px solid #1f2937; }
+        /* Reply Option UI */
+        .reply-box { background: rgba(0, 0, 0, 0.3); border-left: 3px solid #60a5fa; padding: 4px 8px; font-size: 12px; margin-bottom: 6px; border-radius: 4px; color: #9ca3af; }
+        .reply-btn { font-size: 11px; opacity: 0.8; cursor: pointer; margin-top: 4px; display: inline-block; text-decoration: underline; }
+        .reply-btn:hover { opacity: 1; }
+
+        #reply-bar { display: none; background-color: #1f2937; border: 1px solid #374151; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; justify-content: space-between; align-items: center; font-size: 13px; }
+        #reply-bar-text { color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
+
+        #message-form { display: none; flex-direction: column; background-color: #111827; padding: 10px; border-radius: 8px; border: 1px solid #1f2937; }
+        #input-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         #messageInput { flex: 1; padding: 12px; border: 1px solid #374151; border-radius: 6px; background-color: #1f2937; color: #fff; outline: none; }
 
         #recording-controls { display: none; align-items: center; gap: 8px; flex: 1; }
         #timer { color: #ef4444; font-weight: bold; font-family: monospace; font-size: 16px; margin: 0 10px; }
+
+        /* Media Preview Modal */
+        #media-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; }
+        #media-preview-container { max-width: 80%; max-height: 60%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
+        #media-preview-container img, #media-preview-container video { max-width: 100%; max-height: 50vh; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -74,20 +88,38 @@
         <div id="chat" style="display: none;"></div>
 
         <div id="message-form">
-            <div id="text-controls" style="display: flex; flex: 1; align-items: center;">
-                <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
-                <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="sendImage()">
-                <button class="btn-icon" onclick="document.getElementById('imageInput').click()" title="Send Image">📷</button>
-                <button class="btn-icon" onclick="startRecording()" title="Record Voice">🎤</button>
-                <button onclick="sendMessage()">Send</button>
+            <!-- Active Reply Preview Bar -->
+            <div id="reply-bar">
+                <span id="reply-bar-text">Replying to...</span>
+                <button onclick="cancelReply()" style="background: transparent; color: #ef4444; padding: 2px 6px; margin: 0;">✕</button>
             </div>
 
-            <div id="recording-controls">
-                <span id="timer">00:00</span>
-                <button class="btn-icon" id="pauseBtn" onclick="togglePause()" title="Pause/Resume">⏸️</button>
-                <button class="btn-danger" onclick="cancelRecording()" title="Cancel Recording">🗑️ Cancel</button>
-                <button style="background-color: #10b981;" onclick="stopAndSendRecording()" title="Send Voice">📤 Send Voice</button>
+            <div id="input-row">
+                <div id="text-controls" style="display: flex; flex: 1; align-items: center;">
+                    <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <!-- Photo & Video File Input -->
+                    <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" onchange="handleMediaSelect(event)">
+                    <button class="btn-icon" onclick="document.getElementById('mediaInput').click()" title="Send Image/Video">📁</button>
+                    <button class="btn-icon" onclick="startRecording()" title="Record Voice">🎤</button>
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+
+                <div id="recording-controls">
+                    <span id="timer">00:00</span>
+                    <button class="btn-icon" id="pauseBtn" onclick="togglePause()" title="Pause/Resume">⏸️</button>
+                    <button class="btn-danger" onclick="cancelRecording()" title="Cancel Recording">🗑️ Cancel</button>
+                    <button style="background-color: #10b981;" onclick="stopAndSendRecording()" title="Send Voice">📤 Send Voice</button>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Media Preview Modal -->
+    <div id="media-modal">
+        <div id="media-preview-container"></div>
+        <div>
+            <button style="background-color: #10b981;" onclick="confirmSendMedia()">Send</button>
+            <button class="btn-danger" onclick="cancelMediaPreview()">Cancel</button>
         </div>
     </div>
 
@@ -100,6 +132,9 @@
         let timerInterval;
         let secondsElapsed = 0;
         let isCancelled = false;
+
+        let activeReply = null;
+        let selectedMedia = { data: null, type: null };
 
         function joinRoom() {
             const roomCode = document.getElementById('roomInput').value.trim();
@@ -143,30 +178,78 @@
             document.getElementById('chat').style.display = 'none';
             document.getElementById('message-form').style.display = 'none';
             document.getElementById('chat').innerHTML = '';
+            cancelReply();
         });
 
         function sendMessage() {
             const msgInput = document.getElementById('messageInput');
             const msg = msgInput.value.trim();
             if (msg && currentRoom) {
-                socket.emit('send-message', { room: currentRoom, message: msg, type: 'text' });
+                socket.emit('send-message', { 
+                    room: currentRoom, 
+                    message: msg, 
+                    type: 'text',
+                    replyTo: activeReply 
+                });
                 msgInput.value = '';
+                cancelReply();
             }
         }
 
-        function sendImage() {
-            const fileInput = document.getElementById('imageInput');
-            const file = fileInput.files[0];
-            if (file && currentRoom) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    socket.emit('send-message', { room: currentRoom, message: e.target.result, type: 'image' });
-                    fileInput.value = '';
-                };
-                reader.readAsDataURL(file);
+        /* Reply Logic */
+        function setReply(text) {
+            activeReply = text;
+            document.getElementById('reply-bar-text').innerText = `Replying to: ${text}`;
+            document.getElementById('reply-bar').style.display = 'flex';
+        }
+
+        function cancelReply() {
+            activeReply = null;
+            document.getElementById('reply-bar').style.display = 'none';
+        }
+
+        /* Media Handling (Image & Video Preview) */
+        function handleMediaSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            const isVideo = file.type.startsWith('video/');
+            selectedMedia.type = isVideo ? 'video' : 'image';
+
+            reader.onload = function(e) {
+                selectedMedia.data = e.target.result;
+                const container = document.getElementById('media-preview-container');
+                if (isVideo) {
+                    container.innerHTML = `<video src="${selectedMedia.data}" controls></video>`;
+                } else {
+                    container.innerHTML = `<img src="${selectedMedia.data}" alt="Preview">`;
+                }
+                document.getElementById('media-modal').style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function confirmSendMedia() {
+            if (selectedMedia.data && currentRoom) {
+                socket.emit('send-message', { 
+                    room: currentRoom, 
+                    message: selectedMedia.data, 
+                    type: selectedMedia.type,
+                    replyTo: activeReply 
+                });
+                cancelMediaPreview();
+                cancelReply();
             }
         }
 
+        function cancelMediaPreview() {
+            selectedMedia = { data: null, type: null };
+            document.getElementById('mediaInput').value = '';
+            document.getElementById('media-modal').style.display = 'none';
+        }
+
+        /* Voice Recording */
         async function startRecording() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -184,7 +267,13 @@
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         const reader = new FileReader();
                         reader.onload = function(e) {
-                            socket.emit('send-message', { room: currentRoom, message: e.target.result, type: 'audio' });
+                            socket.emit('send-message', { 
+                                room: currentRoom, 
+                                message: e.target.result, 
+                                type: 'audio',
+                                replyTo: activeReply 
+                            });
+                            cancelReply();
                         };
                         reader.readAsDataURL(audioBlob);
                     }
@@ -249,6 +338,7 @@
             document.getElementById('timer').innerText = '00:00';
         }
 
+        /* Message Reception */
         socket.on('receive-message', (data) => {
             const chat = document.getElementById('chat');
             const messageClass = (data.sender === socket.id) ? 'sent' : (data.sender === 'System' ? 'system' : 'received');
@@ -258,17 +348,33 @@
                 chat.innerHTML += `<p class="system">${data.text}</p>`;
             } else {
                 let content = '';
+                let replyBox = '';
+
+                if (data.replyTo) {
+                    replyBox = `<div class="reply-box">↩ <b>${escapeHtml(data.replyTo)}</b></div>`;
+                }
+
                 if (data.type === 'image') {
                     content = `<img src="${data.text}" alt="Image">`;
+                } else if (data.type === 'video') {
+                    content = `<video src="${data.text}" controls></video>`;
                 } else if (data.type === 'audio') {
                     content = `<audio controls src="${data.text}"></audio>`;
                 } else {
-                    content = data.text;
+                    content = escapeHtml(data.text);
                 }
-                chat.innerHTML += `<div class="message ${messageClass}"><strong>${senderLabel}</strong>${content}</div>`;
+
+                const replyText = data.type === 'text' ? data.text : (data.type.toUpperCase() + ' Media');
+                const replyAction = `<br><span class="reply-btn" onclick="setReply('${escapeHtml(replyText)}')">Reply</span>`;
+
+                chat.innerHTML += `<div class="message ${messageClass}">${replyBox}<strong>${senderLabel}</strong>${content}${replyAction}</div>`;
             }
             chat.scrollTop = chat.scrollHeight;
         });
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
     </script>
 </body>
 </html>
