@@ -30,7 +30,8 @@ io.on('connection', (socket) => {
         io.to(data.room).emit('receive-message', { 
             sender: socket.id, 
             text: data.message,
-            type: data.type 
+            type: data.type,
+            replyTo: data.replyTo || null
         });
     });
 });
