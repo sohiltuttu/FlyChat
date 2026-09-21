@@ -78,6 +78,7 @@
             <div id="call-controls">
                 <button id="start-call-btn" onclick="startCall()">📞 Call</button>
                 <button id="mute-btn" class="btn-icon" onclick="toggleMute()" style="display:none;">🎤 Mute</button>
+                <button id="speaker-btn" class="btn-icon" onclick="toggleAudioOutput()" style="display:none;" title="Switch Audio Output">🔊</button>
                 <button id="end-call-btn" class="btn-danger" onclick="endCall()" style="display:none;">Hang Up</button>
             </div>
             <button class="btn-danger" onclick="leaveRoom()">Exit Room</button>
@@ -143,8 +144,11 @@
         const startCallBtn = document.getElementById('start-call-btn');
         const muteBtn = document.getElementById('mute-btn');
         const endCallBtn = document.getElementById('end-call-btn');
+        const speakerBtn = document.getElementById('speaker-btn');
 
-        // Color-Coded Security Indicator
+        let audioDevices = [];
+        let currentDeviceIndex = 0;
+
         const roomInput = document.getElementById('roomInput');
         const warningMsg = document.getElementById('warning-msg');
 
@@ -398,6 +402,7 @@
 
                 socket.emit('call-user', { offer, room: currentRoom });
                 showCallUI();
+                await getAudioOutputDevices();
             } catch (err) {
                 alert('Could not access microphone.');
             }
@@ -415,6 +420,7 @@
 
                 socket.emit('make-answer', { answer, room: currentRoom });
                 showCallUI();
+                await getAudioOutputDevices();
             } catch (err) {
                 alert('Could not access microphone.');
             }
@@ -452,6 +458,35 @@
             }
         }
 
+        async function getAudioOutputDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                audioDevices = devices.filter(device => device.kind === 'audiooutput');
+                if (audioDevices.length > 0 && typeof remoteAudio.setSinkId !== 'function') {
+                    console.warn('setSinkId not supported on this browser.');
+                }
+            } catch (err) {
+                console.error('Error enumerating devices:', err);
+            }
+        }
+
+        async function toggleAudioOutput() {
+            if (audioDevices.length === 0) return;
+            
+            currentDeviceIndex = (currentDeviceIndex + 1) % audioDevices.length;
+            const selectedDevice = audioDevices[currentDeviceIndex];
+
+            if (typeof remoteAudio.setSinkId === 'function') {
+                try {
+                    await remoteAudio.setSinkId(selectedDevice.deviceId);
+                    speakerBtn.title = `Output: ${selectedDevice.label}`;
+                    speakerBtn.style.color = '#10b981'; // Green indicator when switched
+                } catch (err) {
+                    console.error('Error setting sink ID:', err);
+                }
+            }
+        }
+
         function endCall() {
             socket.emit('end-call', { room: currentRoom });
             closeCall();
@@ -476,14 +511,17 @@
         function showCallUI() {
             startCallBtn.style.display = 'none';
             muteBtn.style.display = 'inline-block';
+            speakerBtn.style.display = 'inline-block';
             endCallBtn.style.display = 'inline-block';
         }
 
         function resetCallUI() {
             startCallBtn.style.display = 'inline-block';
             muteBtn.style.display = 'none';
+            speakerBtn.style.display = 'none';
             endCallBtn.style.display = 'none';
             muteBtn.innerText = '🎤 Mute';
+            speakerBtn.style.color = '#fff';
         }
 
         socket.on('receive-message', (data) => {
