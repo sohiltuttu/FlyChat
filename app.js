@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
-    maxHttpBufferSize: 200 * 1024 * 1024 // 200 MB
+    maxHttpBufferSize: 200 * 1024 * 1024 // 200 MB Buffer Size Limit
 });
 
 app.use(express.static('public'));
@@ -35,6 +35,28 @@ io.on('connection', (socket) => {
             type: data.type,
             replyTo: data.replyTo || null
         });
+    });
+
+    socket.on('call-user', (data) => {
+        socket.to(data.room).emit('call-made', {
+            offer: data.offer,
+            socket: socket.id
+        });
+    });
+
+    socket.on('make-answer', (data) => {
+        socket.to(data.room).emit('answer-made', {
+            socket: socket.id,
+            answer: data.answer
+        });
+    });
+
+    socket.on('ice-candidate', (data) => {
+        socket.to(data.room).emit('ice-candidate', data.candidate);
+    });
+
+    socket.on('end-call', (data) => {
+        socket.to(data.room).emit('call-ended');
     });
 });
 
