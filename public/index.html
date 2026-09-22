@@ -377,7 +377,6 @@
                 <input type="text" id="roomInput" placeholder="Enter Room Code">
                 <button onclick="joinRoom()">Join / Create</button>
                 
-                <!-- വാണിംഗ് മെസ്സേജും എറർ മെസ്സേജും ഇവിടെ ഇൻപുട്ട് ബോക്സിന് തൊട്ടു താഴെയാക്കി -->
                 <div id="warning-msg"></div>
                 <div id="error-msg"></div>
             </div>
@@ -385,6 +384,13 @@
 
         <div id="chat-header">
             <span id="room-display" style="font-weight: bold; color: var(--accent-color); font-size: 14px;"></span>
+            
+            <!-- നെറ്റ്‌വർക്ക് പിംഗ് മീറ്റർ -->
+            <div id="network-status" style="display: none; align-items: center; gap: 6px; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color);">
+                <span id="signal-dot" style="height: 10px; width: 10px; border-radius: 50%; display: inline-block; background-color: #10b981;"></span>
+                <span id="ping-text">0 ms</span>
+            </div>
+
             <div id="call-controls">
                 <button id="start-call-btn" onclick="initiateCall()">📞 Call</button>
                 <button id="mute-btn" class="btn-icon" onclick="toggleMute()" style="display:none;">🎤 Mute</button>
@@ -475,6 +481,7 @@
 
         let localStream;
         let peerConnection;
+        let statsInterval = null;
         const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         const remoteAudio = document.getElementById('remote-audio');
@@ -489,7 +496,6 @@
         roomInput.addEventListener('input', () => {
             const val = roomInput.value.trim();
 
-            // സെക്യൂരിറ്റി വാണിംഗ് ടൈപ്പ് ചെയ്യുമ്പോൾ മെസ്സേജ് ക്ലിയർ ചെയ്യുന്നു
             document.getElementById('error-msg').style.display = 'none';
 
             if (val.length === 0) {
@@ -525,7 +531,6 @@
             const roomCode = roomInput.value.trim();
             if (!roomCode) return;
             
-            // പുതിയ ജോയിൻ റെക്വസ്റ്റ് കൊടുക്കുമ്പോൾ പഴയ എററുകൾ മാറ്റുന്നു
             document.getElementById('error-msg').style.display = 'none';
             currentRoom = roomCode;
             socket.emit('join-room', currentRoom);
@@ -549,9 +554,8 @@
             chat.innerHTML = '';
         });
 
-        // റൂം ഫുൾ ആണെങ്കിൽ ഈ എറർ ബോക്സ് കൃത്യമായി ഇൻപുട്ടിൻ്റെ താഴെ പ്രത്യക്ഷപ്പെടും
         socket.on('room-full', (msg) => {
-            warningMsg.style.display = 'none'; // സെക്യൂരിറ്റി മെസ്സേജ് ഉണ്ടെങ്കിൽ ഹൈഡ് ചെയ്യും
+            warningMsg.style.display = 'none';
             const errorDiv = document.getElementById('error-msg');
             errorDiv.innerText = "⚠️ " + msg;
             errorDiv.style.display = 'block';
@@ -817,6 +821,7 @@
         function closeCall() {
             if (peerConnection) { peerConnection.close(); peerConnection = null; }
             if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+            stopNetworkMonitoring();
             resetCallUI();
         }
 
@@ -825,6 +830,7 @@
             muteBtn.style.display = 'inline-flex';
             speakerBtn.style.display = 'inline-flex';
             endCallBtn.style.display = 'inline-flex';
+            startNetworkMonitoring();
         }
 
         function resetCallUI() {
@@ -832,6 +838,60 @@
             muteBtn.style.display = 'none';
             speakerBtn.style.display = 'none';
             endCallBtn.style.display = 'none';
+        }
+
+        function startNetworkMonitoring() {
+            const netStatus = document.getElementById('network-status');
+            const signalDot = document.getElementById('signal-dot');
+            const pingText = document.getElementById('ping-text');
+
+            netStatus.style.display = 'flex';
+
+            statsInterval = setInterval(async () => {
+                if (!peerConnection) return;
+
+                try {
+                    const stats = await peerConnection.getStats();
+                    let currentPing = null;
+
+                    stats.forEach(report => {
+                        if (report.type === 'remote-inbound-rtp' && report.roundTripTime !== undefined) {
+                            currentPing = report.roundTripTime * 1000;
+                        } else if (report.type === 'candidate-pair' && report.state === 'succeeded' && report.currentRoundTripTime !== undefined) {
+                            currentPing = report.currentRoundTripTime * 1000;
+                        }
+                    });
+
+                    if (currentPing !== null) {
+                        const pingMs = Math.round(currentPing);
+                        pingText.innerText = `${pingMs} ms`;
+
+                        if (pingMs < 100) {
+                            signalDot.style.backgroundColor = '#10b981'; // Green (Excellent)
+                            pingText.style.color = '#10b981';
+                        } else if (pingMs <= 250) {
+                            signalDot.style.backgroundColor = '#3b82f6'; // Blue (Good)
+                            pingText.style.color = '#3b82f6';
+                        } else if (pingMs <= 400) {
+                            signalDot.style.backgroundColor = '#f59e0b'; // Yellow (Weak)
+                            pingText.style.color = '#f59e0b';
+                        } else {
+                            signalDot.style.backgroundColor = '#ef4444'; // Red (Bad)
+                            pingText.style.color = '#ef4444';
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error fetching WebRTC stats:", err);
+                }
+            }, 1000);
+        }
+
+        function stopNetworkMonitoring() {
+            if (statsInterval) {
+                clearInterval(statsInterval);
+                statsInterval = null;
+            }
+            document.getElementById('network-status').style.display = 'none';
         }
 
         socket.on('initial-messages', (messages) => {
