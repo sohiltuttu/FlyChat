@@ -53,6 +53,10 @@
         #media-preview-container { max-width: 80%; max-height: 60%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
         #media-preview-container img, #media-preview-container video { max-width: 100%; max-height: 50vh; border-radius: 8px; object-fit: contain; }
 
+        /* Call Modals */
+        .call-modal { display: none; position: fixed; top: 20px; right: 20px; background-color: #1f2937; padding: 15px; border-radius: 8px; border: 1px solid #374151; z-index: 1000; color: #e0e6ed; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .call-modal p { margin: 0 0 10px 0; }
+
         #call-controls { display: flex; align-items: center; gap: 8px; }
     </style>
 </head>
@@ -76,7 +80,7 @@
         <div id="chat-header">
             <span id="room-display" style="font-weight: bold; color: #60a5fa;"></span>
             <div id="call-controls">
-                <button id="start-call-btn" onclick="startCall()">📞 Call</button>
+                <button id="start-call-btn" onclick="initiateCall()">📞 Call</button>
                 <button id="mute-btn" class="btn-icon" onclick="toggleMute()" style="display:none;">🎤 Mute</button>
                 <button id="speaker-btn" class="btn-icon" onclick="toggleAudioOutput()" style="display:none;" title="Switch Audio Output">🔊</button>
                 <button id="end-call-btn" class="btn-danger" onclick="endCall()" style="display:none;">Hang Up</button>
@@ -111,12 +115,26 @@
         </div>
     </div>
 
+    <!-- Media Preview Modal -->
     <div id="media-modal">
         <div id="media-preview-container"></div>
         <div>
             <button style="background-color: #10b981;" onclick="confirmSendMedia()">Send</button>
             <button class="btn-danger" onclick="cancelMediaPreview()">Cancel</button>
         </div>
+    </div>
+
+    <!-- Incoming Call Modal -->
+    <div id="incoming-call-modal" class="call-modal">
+        <p>📞 Incoming Voice Call...</p>
+        <button style="background-color: #10b981;" onclick="acceptCall()">Accept</button>
+        <button class="btn-danger" onclick="rejectCall()">Decline</button>
+    </div>
+
+    <!-- Outgoing Call Modal -->
+    <div id="outgoing-call-modal" class="call-modal">
+        <p>Calling the user...</p>
+        <button class="btn-danger" onclick="cancelOutgoingCall()">Cancel</button>
     </div>
 
     <audio id="remote-audio" autoplay></audio>
@@ -149,6 +167,7 @@
         let audioDevices = [];
         let currentDeviceIndex = 0;
 
+        // Security Validation On Input
         const roomInput = document.getElementById('roomInput');
         const warningMsg = document.getElementById('warning-msg');
 
@@ -224,6 +243,7 @@
             document.getElementById('message-form').style.display = 'none';
             document.getElementById('chat').innerHTML = '';
             cancelReply();
+            endCall();
         });
 
         function sendMessage() {
@@ -391,16 +411,52 @@
             document.getElementById('timer').innerText = '00:00';
         }
 
-        async function startCall() {
+        // Call Request logic
+        function initiateCall() {
+            document.getElementById('outgoing-call-modal').style.display = 'block';
+            socket.emit('request-call', { room: currentRoom });
+        }
+
+        socket.on('incoming-call', () => {
+            document.getElementById('incoming-call-modal').style.display = 'block';
+        });
+
+        async function acceptCall() {
+            document.getElementById('incoming-call-modal').style.display = 'none';
+            socket.emit('accept-call', { room: currentRoom });
+            await setupLocalMediaAndConnection();
+        }
+
+        function rejectCall() {
+            document.getElementById('incoming-call-modal').style.display = 'none';
+            socket.emit('reject-call', { room: currentRoom });
+        }
+
+        function cancelOutgoingCall() {
+            document.getElementById('outgoing-call-modal').style.display = 'none';
+            socket.emit('reject-call', { room: currentRoom });
+        }
+
+        socket.on('call-accepted', async () => {
+            document.getElementById('outgoing-call-modal').style.display = 'none';
+            await setupLocalMediaAndConnection();
+            
+            // Create and send WebRTC Offer
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('call-user', { offer, room: currentRoom });
+        });
+
+        socket.on('call-rejected', () => {
+            document.getElementById('outgoing-call-modal').style.display = 'none';
+            alert("Call was declined.");
+        });
+
+        async function setupLocalMediaAndConnection() {
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                 createPeerConnection();
                 localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-
-                socket.emit('call-user', { offer, room: currentRoom });
                 showCallUI();
                 await getAudioOutputDevices();
             } catch (err) {
@@ -410,19 +466,14 @@
 
         socket.on('call-made', async (data) => {
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                createPeerConnection();
-                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
+                // For receiver, setup is done already in acceptCall()
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
 
                 socket.emit('make-answer', { answer, room: currentRoom });
-                showCallUI();
-                await getAudioOutputDevices();
             } catch (err) {
-                alert('Could not access microphone.');
+                console.error('Error handling call made:', err);
             }
         });
 
