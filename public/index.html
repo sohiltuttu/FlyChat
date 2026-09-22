@@ -487,23 +487,23 @@
 
             warningMsg.style.display = 'block';
 
-            // High Security: Special Characters + (Letters OR Numbers) OR 10+ Characters with mixed types
+            // High Security: Special Characters + (Letters OR Numbers)
             if (hasSpecials && (hasLetters || hasNumbers)) {
-                warningMsg.innerText = "🔒 Highly Secure Code! നിങ്ങളുടെ ചാറ്റ് വളരെ സുരക്ഷിതമാണ്.";
+                warningMsg.innerText = "🔒 Highly Secure Code! Your chat is safe.";
                 warningMsg.style.color = '#34d399';
                 warningMsg.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
                 warningMsg.style.border = '1px solid var(--success-color)';
             }
             // Moderate Security: Numbers + Letters mixed
             else if (hasLetters && hasNumbers) {
-                warningMsg.innerText = "⚡ Moderate Security! സ്പെഷ്യൽ ക്യാരക്റ്ററുകൾ (@, #, $) കൂടെ ഉൾപ്പെടുത്തുക.";
+                warningMsg.innerText = "⚡ Moderate Security! Consider adding special characters (@, #, $).";
                 warningMsg.style.color = '#fbbf24';
                 warningMsg.style.backgroundColor = 'rgba(245, 158, 11, 0.15)';
                 warningMsg.style.border = '1px solid var(--warning-color)';
             }
-            // Weak/Insecure Security: Just letters (like abcd) or just numbers or short code
+            // Weak/Insecure Security: Just letters (like abcd) or just numbers
             else {
-                warningMsg.innerText = "⚠️ ഈ കോഡ് സെക്യൂർ അല്ല! വേറെ ആരെങ്കിലും കയറാൻ സാധ്യതയുണ്ട്. സെക്യൂരിറ്റിയുള്ള കോഡ് നൽകുക.";
+                warningMsg.innerText = "⚠️ Insecure Code! Someone else might easily guess or join your room. Use a stronger code.";
                 warningMsg.style.color = '#f87171';
                 warningMsg.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
                 warningMsg.style.border = '1px solid var(--danger-color)';
