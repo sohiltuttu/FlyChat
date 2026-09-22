@@ -37,6 +37,19 @@ io.on('connection', (socket) => {
         });
     });
 
+    // WebRTC Signaling and Call Request Events
+    socket.on('request-call', (data) => {
+        socket.to(data.room).emit('incoming-call', { callerId: socket.id });
+    });
+
+    socket.on('accept-call', (data) => {
+        socket.to(data.room).emit('call-accepted');
+    });
+
+    socket.on('reject-call', (data) => {
+        socket.to(data.room).emit('call-rejected');
+    });
+
     socket.on('call-user', (data) => {
         socket.to(data.room).emit('call-made', {
             offer: data.offer,
