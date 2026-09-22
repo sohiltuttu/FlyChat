@@ -5,87 +5,430 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlyChat</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0f19; color: #e0e6ed; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        h2 { text-align: center; color: #4da6ff; margin-bottom: 20px; }
-        
-        .welcome-card { background-color: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; text-align: center; }
-        .welcome-card h3 { color: #60a5fa; margin-top: 0; margin-bottom: 8px; font-size: 18px; }
-        .welcome-card p { color: #9ca3af; font-size: 14px; margin: 0; line-height: 1.5; }
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #111827;
+            --border-color: #1f2937;
+            --text-primary: #e0e6ed;
+            --text-secondary: #9ca3af;
+            --accent-color: #4da6ff;
+            --accent-hover: #2563eb;
+            --danger-color: #dc2626;
+            --danger-hover: #991b1b;
+            --success-color: #10b981;
+        }
 
-        #warning-msg { text-align: center; margin-bottom: 10px; display: none; font-size: 14px; font-weight: bold; }
-        #error-msg { color: #ef4444; text-align: center; margin-bottom: 15px; display: none; font-size: 14px; font-weight: bold; padding: 10px; background-color: #7f1d1d; border-radius: 6px; border: 1px solid #b91c1c; }
-        
-        #room-selection { display: flex; justify-content: center; background-color: #111827; padding: 20px; border-radius: 8px; border: 1px solid #1f2937; margin-bottom: 15px; }
-        #roomInput { padding: 12px; border: 1px solid #374151; border-radius: 6px; background-color: #1f2937; color: #fff; margin-right: 10px; width: 220px; outline: none; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-        button { padding: 10px 14px; border: none; border-radius: 6px; background-color: #2563eb; color: #fff; cursor: pointer; font-weight: bold; transition: background 0.2s; margin-left: 4px; }
-        button:hover { background-color: #1d4ed8; }
-        .btn-danger { background-color: #dc2626; }
-        .btn-danger:hover { background-color: #b91c1c; }
-        .btn-icon { background-color: #374151; }
-        .btn-icon:hover { background-color: #4b5563; }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.5s ease-out;
+            box-sizing: border-box;
+        }
 
-        #chat-header { display: none; justify-content: space-between; align-items: center; background-color: #111827; padding: 10px 15px; border-radius: 8px 8px 0 0; border-bottom: 1px solid #1f2937; }
-        #chat { border: 1px solid #1f2937; height: 400px; overflow-y: auto; padding: 20px; border-radius: 0 0 8px 8px; background-color: #111827; margin-bottom: 15px; display: flex; flex-direction: column; }
-        .message { margin-bottom: 12px; padding: 10px 16px; border-radius: 18px; max-width: 70%; word-wrap: break-word; font-size: 15px; position: relative; }
-        .message img, .message video { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; }
-        .message audio { max-width: 100%; margin-top: 5px; display: block; }
-        .sent { background-color: #2563eb; color: #ffffff; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .received { background-color: #1f2937; color: #e0e6ed; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #374151; }
-        .system { color: #9ca3af; text-align: center; font-style: italic; align-self: center; font-size: 13px; margin: 8px 0; }
-        
-        .reply-box { background: rgba(0, 0, 0, 0.3); border-left: 3px solid #60a5fa; padding: 4px 8px; font-size: 12px; margin-bottom: 6px; border-radius: 4px; color: #9ca3af; }
-        .reply-btn { font-size: 11px; opacity: 0.8; cursor: pointer; margin-top: 4px; display: inline-block; text-decoration: underline; }
-        .reply-btn:hover { opacity: 1; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        #reply-bar { display: none; background-color: #1f2937; border: 1px solid #374151; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; justify-content: space-between; align-items: center; font-size: 13px; }
-        #reply-bar-text { color: #9ca3af; white-space: overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
+        h2 {
+            text-align: center;
+            color: var(--accent-color);
+            margin-bottom: 25px;
+            font-size: 28px;
+            font-weight: 700;
+        }
 
-        #message-form { display: none; flex-direction: column; background-color: #111827; padding: 10px; border-radius: 8px; border: 1px solid #1f2937; }
-        #input-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        #messageInput { flex: 1; padding: 12px; border: 1px solid #374151; border-radius: 6px; background-color: #1f2937; color: #fff; outline: none; }
+        .welcome-card {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: rgba(77, 166, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(77, 166, 255, 0.1);
+        }
 
-        #recording-controls { display: none; align-items: center; gap: 8px; flex: 1; }
-        #timer { color: #ef4444; font-weight: bold; font-family: monospace; font-size: 16px; margin: 0 10px; }
+        .logo {
+            font-size: 40px;
+            margin-bottom: 15px;
+            display: block;
+        }
 
-        #media-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; }
-        #media-preview-container { max-width: 80%; max-height: 60%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
-        #media-preview-container img, #media-preview-container video { max-width: 100%; max-height: 50vh; border-radius: 8px; object-fit: contain; }
+        .welcome-card h3 {
+            color: var(--accent-color);
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
 
-        /* Call Modals */
-        .call-modal { display: none; position: fixed; top: 20px; right: 20px; background-color: #1f2937; padding: 15px; border-radius: 8px; border: 1px solid #374151; z-index: 1000; color: #e0e6ed; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .call-modal p { margin: 0 0 10px 0; }
+        .welcome-card p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin: 0;
+            line-height: 1.6;
+        }
 
-        #call-controls { display: flex; align-items: center; gap: 8px; }
+        #warning-msg {
+            text-align: center;
+            margin-bottom: 10px;
+            display: none;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        #error-msg {
+            color: #ef4444;
+            text-align: center;
+            margin-bottom: 15px;
+            display: none;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 10px;
+            background-color: #7f1d1d;
+            border-radius: 6px;
+            border: 1px solid #b91c1c;
+        }
+
+        #room-selection {
+            display: flex;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 25px;
+        }
+
+        #roomInput {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--bg-color);
+            color: #fff;
+            margin-right: 10px;
+            width: 220px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        #roomInput:focus {
+            border-color: var(--accent-color);
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--accent-color);
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+        .btn-icon {
+            background-color: var(--border-color);
+            color: var(--text-primary);
+            padding: 10px;
+        }
+        .btn-icon:hover {
+            background-color: #374151;
+        }
+
+        #chat-header {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #chat {
+            border: 1px solid var(--border-color);
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            border-radius: 0 0 8px 8px;
+            background-color: var(--card-bg);
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 75%;
+            word-wrap: break-word;
+            font-size: 15px;
+            position: relative;
+        }
+
+        /* പുതിയ മെസ്സേജിന് മാത്രം ആനിമേഷൻ വരാൻ വേണ്ടി */
+        .new-message {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message img, .message video {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 8px;
+            display: block;
+        }
+        .message audio {
+            max-width: 100%;
+            margin-top: 8px;
+            display: block;
+        }
+        .sent {
+            background-color: var(--accent-color);
+            color: #ffffff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .received {
+            background-color: var(--border-color);
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .system {
+            color: var(--text-secondary);
+            text-align: center;
+            font-style: italic;
+            align-self: center;
+            font-size: 13px;
+            margin: 10px 0;
+        }
+
+        .reply-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid var(--accent-color);
+            padding: 6px 10px;
+            font-size: 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+        .reply-btn {
+            font-size: 11px;
+            opacity: 0.8;
+            cursor: pointer;
+            margin-top: 6px;
+            display: inline-block;
+            text-decoration: underline;
+        }
+        .sent .reply-btn {
+            color: #ffffff;
+        }
+        .received .reply-btn {
+            color: var(--accent-color);
+        }
+        .reply-btn:hover {
+            opacity: 1;
+        }
+
+        #reply-bar {
+            display: none;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #reply-bar-text {
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80%;
+        }
+
+        #message-form {
+            display: none;
+            flex-direction: column;
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #input-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        #messageInput {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--bg-color);
+            color: #fff;
+            outline: none;
+            transition: border 0.2s;
+        }
+        #messageInput:focus {
+            border-color: var(--accent-color);
+        }
+
+        #recording-controls {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+        #timer {
+            color: var(--danger-color);
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 16px;
+            margin: 0 10px;
+        }
+
+        #media-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #media-preview-container {
+            max-width: 90%;
+            max-height: 70%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #media-preview-container img, #media-preview-container video {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .call-modal {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            z-index: 3000;
+            color: var(--text-primary);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease-out;
+            width: 300px;
+            box-sizing: border-box;
+        }
+        .call-modal p {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            text-align: center;
+        }
+        .call-modal .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        #call-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>FlyChat</h2>
-        
-        <div class="welcome-card" id="welcome-box">
-            <h3>Welcome to FlyChat 💬</h3>
-            <p>Enter a unique room code below to create or join a chat room.</p>
-        </div>
+        <div id="setup-section">
+            <h2>FlyChat</h2>
+            
+            <div class="welcome-card" id="welcome-box">
+                <span class="logo">🚀</span>
+                <h3>Welcome to FlyChat</h3>
+                <p>Simple, secure, and professional real-time communication. Connect and collaborate instantly.</p>
+            </div>
 
-        <div id="warning-msg"></div>
-        <div id="error-msg"></div>
+            <div id="warning-msg"></div>
+            <div id="error-msg"></div>
 
-        <div id="room-selection">
-            <input type="text" id="roomInput" placeholder="Enter Room Code">
-            <button onclick="joinRoom()">Join / Create</button>
+            <div id="room-selection">
+                <input type="text" id="roomInput" placeholder="Enter Room Code">
+                <button onclick="joinRoom()">Join / Create</button>
+            </div>
         </div>
 
         <div id="chat-header">
-            <span id="room-display" style="font-weight: bold; color: #60a5fa;"></span>
+            <span id="room-display" style="font-weight: bold; color: var(--accent-color);"></span>
             <div id="call-controls">
                 <button id="start-call-btn" onclick="initiateCall()">📞 Call</button>
                 <button id="mute-btn" class="btn-icon" onclick="toggleMute()" style="display:none;">🎤 Mute</button>
                 <button id="speaker-btn" class="btn-icon" onclick="toggleAudioOutput()" style="display:none;" title="Switch Audio Output">🔊</button>
                 <button id="end-call-btn" class="btn-danger" onclick="endCall()" style="display:none;">Hang Up</button>
             </div>
-            <button class="btn-danger" onclick="leaveRoom()">Exit Room</button>
+            <button class="btn-danger" onclick="leaveRoom()">Exit</button>
         </div>
 
         <div id="chat" style="display: none;"></div>
@@ -93,7 +436,7 @@
         <div id="message-form">
             <div id="reply-bar">
                 <span id="reply-bar-text">Replying to...</span>
-                <button onclick="cancelReply()" style="background: transparent; color: #ef4444; padding: 2px 6px; margin: 0;">✕</button>
+                <button onclick="cancelReply()" style="background: transparent; color: var(--danger-color); padding: 4px 8px; margin: 0;">✕</button>
             </div>
 
             <div id="input-row">
@@ -109,7 +452,7 @@
                     <span id="timer">00:00</span>
                     <button class="btn-icon" id="pauseBtn" onclick="togglePause()" title="Pause/Resume">⏸️</button>
                     <button class="btn-danger" onclick="cancelRecording()" title="Cancel Recording">🗑️ Cancel</button>
-                    <button style="background-color: #10b981;" onclick="stopAndSendRecording()" title="Send Voice">📤 Send Voice</button>
+                    <button style="background-color: var(--success-color);" onclick="stopAndSendRecording()" title="Send Voice">📤 Send Voice</button>
                 </div>
             </div>
         </div>
@@ -119,7 +462,7 @@
     <div id="media-modal">
         <div id="media-preview-container"></div>
         <div>
-            <button style="background-color: #10b981;" onclick="confirmSendMedia()">Send</button>
+            <button style="background-color: var(--success-color);" onclick="confirmSendMedia()">Send</button>
             <button class="btn-danger" onclick="cancelMediaPreview()">Cancel</button>
         </div>
     </div>
@@ -127,14 +470,18 @@
     <!-- Incoming Call Modal -->
     <div id="incoming-call-modal" class="call-modal">
         <p>📞 Incoming Voice Call...</p>
-        <button style="background-color: #10b981;" onclick="acceptCall()">Accept</button>
-        <button class="btn-danger" onclick="rejectCall()">Decline</button>
+        <div class="btn-group">
+            <button style="background-color: var(--success-color);" onclick="acceptCall()">Accept</button>
+            <button class="btn-danger" onclick="rejectCall()">Decline</button>
+        </div>
     </div>
 
     <!-- Outgoing Call Modal -->
     <div id="outgoing-call-modal" class="call-modal">
         <p>Calling the user...</p>
-        <button class="btn-danger" onclick="cancelOutgoingCall()">Cancel</button>
+        <div class="btn-group">
+            <button class="btn-danger" onclick="cancelOutgoingCall()">Cancel</button>
+        </div>
     </div>
 
     <audio id="remote-audio" autoplay></audio>
@@ -218,14 +565,18 @@
         }
 
         socket.on('joined', (room) => {
-            document.getElementById('welcome-box').style.display = 'none';
-            warningMsg.style.display = 'none';
-            document.getElementById('room-selection').style.display = 'none';
+            document.getElementById('setup-section').style.display = 'none';
             document.getElementById('chat-header').style.display = 'flex';
             document.getElementById('chat').style.display = 'flex';
             document.getElementById('message-form').style.display = 'flex';
             document.getElementById('room-display').innerText = `Room: ${room}`;
-            document.getElementById('chat').innerHTML = `<p class="system">Created / Joined room: ${room}</p>`;
+            
+            const chat = document.getElementById('chat');
+            chat.innerHTML = '';
+            const sysMsg = document.createElement('p');
+            sysMsg.className = 'system';
+            sysMsg.innerText = `Created / Joined room: ${room}`;
+            chat.appendChild(sysMsg);
         });
 
         socket.on('room-full', (msg) => {
@@ -236,8 +587,7 @@
 
         socket.on('left-room', () => {
             currentRoom = "";
-            document.getElementById('welcome-box').style.display = 'block';
-            document.getElementById('room-selection').style.display = 'flex';
+            document.getElementById('setup-section').style.display = 'block';
             document.getElementById('chat-header').style.display = 'none';
             document.getElementById('chat').style.display = 'none';
             document.getElementById('message-form').style.display = 'none';
@@ -411,7 +761,6 @@
             document.getElementById('timer').innerText = '00:00';
         }
 
-        // Call Request logic
         function initiateCall() {
             document.getElementById('outgoing-call-modal').style.display = 'block';
             socket.emit('request-call', { room: currentRoom });
@@ -441,7 +790,6 @@
             document.getElementById('outgoing-call-modal').style.display = 'none';
             await setupLocalMediaAndConnection();
             
-            // Create and send WebRTC Offer
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
             socket.emit('call-user', { offer, room: currentRoom });
@@ -466,7 +814,6 @@
 
         socket.on('call-made', async (data) => {
             try {
-                // For receiver, setup is done already in acceptCall()
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
@@ -513,9 +860,6 @@
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 audioDevices = devices.filter(device => device.kind === 'audiooutput');
-                if (audioDevices.length > 0 && typeof remoteAudio.setSinkId !== 'function') {
-                    console.warn('setSinkId not supported on this browser.');
-                }
             } catch (err) {
                 console.error('Error enumerating devices:', err);
             }
@@ -531,7 +875,7 @@
                 try {
                     await remoteAudio.setSinkId(selectedDevice.deviceId);
                     speakerBtn.title = `Output: ${selectedDevice.label}`;
-                    speakerBtn.style.color = '#10b981'; // Green indicator when switched
+                    speakerBtn.style.color = 'var(--success-color)';
                 } catch (err) {
                     console.error('Error setting sink ID:', err);
                 }
@@ -577,33 +921,48 @@
 
         socket.on('receive-message', (data) => {
             const chat = document.getElementById('chat');
-            const messageClass = (data.sender === socket.id) ? 'sent' : (data.sender === 'System' ? 'system' : 'received');
-            const senderLabel = (data.sender === 'System') ? '' : (data.sender === socket.id ? 'You: ' : 'User: ');
             
             if (data.sender === 'System') {
-                chat.innerHTML += `<p class="system">${data.text}</p>`;
+                const sysMsg = document.createElement('p');
+                sysMsg.className = 'system';
+                sysMsg.innerText = data.text;
+                chat.appendChild(sysMsg);
             } else {
-                let content = '';
-                let replyBox = '';
+                const isSent = (data.sender === socket.id);
+                const messageClass = isSent ? 'sent' : 'received';
+                const senderLabel = isSent ? 'You: ' : 'User: ';
+
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `message ${messageClass} new-message`;
+
+                let contentHtml = '';
+                let replyBoxHtml = '';
 
                 if (data.replyTo) {
-                    replyBox = `<div class="reply-box">↩ <b>${escapeHtml(data.replyTo)}</b></div>`;
+                    replyBoxHtml = `<div class="reply-box">↩ <b>${escapeHtml(data.replyTo)}</b></div>`;
                 }
 
                 if (data.type === 'image') {
-                    content = `<img src="${data.text}" alt="Image">`;
+                    contentHtml = `<img src="${data.text}" alt="Image">`;
                 } else if (data.type === 'video') {
-                    content = `<video src="${data.text}" controls></video>`;
+                    contentHtml = `<video src="${data.text}" controls></video>`;
                 } else if (data.type === 'audio') {
-                    content = `<audio controls src="${data.text}"></audio>`;
+                    contentHtml = `<audio controls src="${data.text}"></audio>`;
                 } else {
-                    content = escapeHtml(data.text);
+                    contentHtml = escapeHtml(data.text);
                 }
 
                 const replyText = data.type === 'text' ? data.text : (data.type.toUpperCase() + ' Media');
-                const replyAction = `<br><span class="reply-btn" onclick="setReply('${escapeHtml(replyText)}')">Reply</span>`;
 
-                chat.innerHTML += `<div class="message ${messageClass}">${replyBox}<strong>${senderLabel}</strong>${content}${replyAction}</div>`;
+                msgDiv.innerHTML = `${replyBoxHtml}<strong>${senderLabel}</strong>${contentHtml}<br><span class="reply-btn">Reply</span>`;
+
+                // റിപ്ലൈ ബട്ടൺ ക്ലിക്ക് ചെയ്യുമ്പോൾ ഫങ്ഷൻ പ്രവർത്തിക്കാൻ
+                const replyBtn = msgDiv.querySelector('.reply-btn');
+                replyBtn.addEventListener('click', () => {
+                    setReply(replyText);
+                });
+
+                chat.appendChild(msgDiv);
             }
             chat.scrollTop = chat.scrollHeight;
         });
