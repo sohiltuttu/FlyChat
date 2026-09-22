@@ -2,124 +2,120 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FlyChat</title>
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: #111827;
-            --border-color: #1f2937;
-            --text-primary: #e0e6ed;
-            --text-secondary: #9ca3af;
-            --accent-color: #4da6ff;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #3b82f6;
             --accent-hover: #2563eb;
-            --danger-color: #dc2626;
-            --danger-hover: #991b1b;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
             --success-color: #10b981;
         }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-primary);
-            margin: 0;
-            padding: 20px;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            padding: 12px;
         }
 
         .container {
-            max-width: 600px;
             width: 100%;
+            max-width: 800px;
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.5s ease-out;
-            box-sizing: border-box;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         h2 {
             text-align: center;
             color: var(--accent-color);
-            margin-bottom: 25px;
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 700;
         }
 
         .welcome-card {
             text-align: center;
-            margin-bottom: 25px;
-            padding: 20px;
-            background-color: rgba(77, 166, 255, 0.05);
-            border-radius: 8px;
-            border: 1px solid rgba(77, 166, 255, 0.1);
+            padding: 16px;
+            background-color: rgba(59, 130, 246, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
         }
 
         .welcome-card h3 {
             color: var(--accent-color);
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 22px;
+            margin-bottom: 6px;
+            font-size: 18px;
         }
 
         .welcome-card p {
             color: var(--text-secondary);
             font-size: 14px;
-            margin: 0;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
-        #warning-msg {
+        #warning-msg, #error-msg {
             text-align: center;
-            margin-bottom: 10px;
-            display: none;
             font-size: 14px;
-            font-weight: bold;
+            font-weight: 600;
+            display: none;
         }
 
         #error-msg {
-            color: #ef4444;
-            text-align: center;
-            margin-bottom: 15px;
-            display: none;
-            font-size: 14px;
-            font-weight: bold;
+            color: #fca5a5;
             padding: 10px;
-            background-color: #7f1d1d;
-            border-radius: 6px;
-            border: 1px solid #b91c1c;
+            background-color: rgba(239, 68, 68, 0.2);
+            border-radius: 8px;
+            border: 1px solid var(--danger-color);
         }
 
         #room-selection {
             display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
             justify-content: center;
-            background-color: rgba(255, 255, 255, 0.03);
-            padding: 20px;
-            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.02);
+            padding: 16px;
+            border-radius: 12px;
             border: 1px solid var(--border-color);
-            margin-bottom: 25px;
+        }
+
+        /* Prevent Safari Auto-Zoom on iOS */
+        input[type="text"], input[type="file"], button {
+            font-size: 16px !important;
         }
 
         #roomInput {
-            padding: 12px;
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
             border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 10px;
             background-color: var(--bg-color);
             color: #fff;
-            margin-right: 10px;
-            width: 220px;
             outline: none;
-            transition: border 0.2s;
-            font-size: 16px; /* iPhone Safari Auto-Zoom Fix */
+            transition: border-color 0.2s;
         }
 
         #roomInput:focus {
@@ -127,14 +123,17 @@
         }
 
         button {
-            padding: 10px 20px;
+            padding: 12px 20px;
             border: none;
-            border-radius: 6px;
+            border-radius: 10px;
             background-color: var(--accent-color);
             color: #fff;
             cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s, transform 0.1s;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         button:hover {
@@ -142,7 +141,7 @@
         }
 
         button:active {
-            transform: scale(0.98);
+            transform: scale(0.97);
         }
 
         .btn-danger {
@@ -151,169 +150,146 @@
         .btn-danger:hover {
             background-color: var(--danger-hover);
         }
+
         .btn-icon {
             background-color: var(--border-color);
             color: var(--text-primary);
-            padding: 10px;
-        }
-        .btn-icon:hover {
-            background-color: #374151;
+            padding: 10px 14px;
         }
 
         #chat-header {
             display: none;
+            flex-wrap: wrap;
+            gap: 10px;
             justify-content: space-between;
             align-items: center;
-            background-color: var(--card-bg);
-            padding: 15px 20px;
-            border-radius: 8px 8px 0 0;
+            padding-bottom: 12px;
             border-bottom: 1px solid var(--border-color);
-            margin-bottom: 0;
-            width: 100%;
-            box-sizing: border-box;
+        }
+
+        #call-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         #chat {
             border: 1px solid var(--border-color);
-            height: 400px;
+            height: 50vh;
+            min-height: 300px;
+            max-height: 500px;
             overflow-y: auto;
-            padding: 20px;
-            border-radius: 0 0 8px 8px;
-            background-color: var(--card-bg);
-            margin-bottom: 20px;
+            padding: 16px;
+            border-radius: 12px;
+            background-color: var(--bg-color);
             display: flex;
             flex-direction: column;
-            width: 100%;
-            box-sizing: border-box;
+            gap: 12px;
         }
 
         .message {
-            margin-bottom: 15px;
-            padding: 12px 16px;
-            border-radius: 18px;
-            max-width: 75%;
-            word-wrap: break-word;
+            padding: 10px 14px;
+            border-radius: 16px;
+            max-width: 80%;
+            word-break: break-word;
             font-size: 15px;
-            position: relative;
+            line-height: 1.4;
         }
 
-        .new-message {
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message img, .message video {
-            max-width: 100%;
-            border-radius: 8px;
-            margin-top: 8px;
-            display: block;
-        }
-        .message audio {
-            max-width: 100%;
-            margin-top: 8px;
-            display: block;
-        }
         .sent {
             background-color: var(--accent-color);
             color: #ffffff;
             align-self: flex-end;
             border-bottom-right-radius: 4px;
         }
+
         .received {
             background-color: var(--border-color);
             color: var(--text-primary);
             align-self: flex-start;
             border-bottom-left-radius: 4px;
         }
+
         .system {
             color: var(--text-secondary);
             text-align: center;
             font-style: italic;
             align-self: center;
             font-size: 13px;
-            margin: 10px 0;
+        }
+
+        .message img, .message video {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 6px;
+        }
+
+        .message audio {
+            max-width: 100%;
+            margin-top: 6px;
         }
 
         .reply-box {
-            background: rgba(0, 0, 0, 0.2);
-            border-left: 3px solid var(--accent-color);
-            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.25);
+            border-left: 3px solid var(--text-primary);
+            padding: 4px 8px;
             font-size: 12px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             border-radius: 4px;
-            color: var(--text-secondary);
         }
+
         .reply-btn {
             font-size: 11px;
             opacity: 0.8;
             cursor: pointer;
-            margin-top: 6px;
+            margin-top: 4px;
             display: inline-block;
             text-decoration: underline;
-        }
-        .sent .reply-btn {
-            color: #ffffff;
-        }
-        .received .reply-btn {
-            color: var(--accent-color);
-        }
-        .reply-btn:hover {
-            opacity: 1;
         }
 
         #reply-bar {
             display: none;
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
-            padding: 10px 15px;
+            padding: 8px 12px;
             border-radius: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             justify-content: space-between;
             align-items: center;
             font-size: 13px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        #reply-bar-text {
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 80%;
         }
 
         #message-form {
             display: none;
             flex-direction: column;
-            background-color: var(--card-bg);
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            width: 100%;
-            box-sizing: border-box;
-        }
-        #input-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
             gap: 8px;
         }
+
+        #input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            width: 100%;
+        }
+
+        #text-controls {
+            display: flex;
+            flex: 1;
+            gap: 8px;
+            align-items: center;
+        }
+
         #messageInput {
             flex: 1;
             padding: 12px;
             border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 10px;
             background-color: var(--bg-color);
             color: #fff;
             outline: none;
-            transition: border 0.2s;
-            font-size: 16px; /* iPhone Safari Auto-Zoom Fix */
+            min-width: 0;
         }
+
         #messageInput:focus {
             border-color: var(--accent-color);
         }
@@ -321,78 +297,50 @@
         #recording-controls {
             display: none;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             flex: 1;
+            flex-wrap: wrap;
         }
+
         #timer {
             color: var(--danger-color);
             font-weight: bold;
             font-family: monospace;
             font-size: 16px;
-            margin: 0 10px;
         }
 
-        #media-modal {
+        /* Modals */
+        #media-modal, .call-modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
             z-index: 2000;
             align-items: center;
             justify-content: center;
             flex-direction: column;
             padding: 20px;
-            box-sizing: border-box;
-        }
-        #media-preview-container {
-            max-width: 90%;
-            max-height: 70%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        #media-preview-container img, #media-preview-container video {
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: 8px;
-            object-fit: contain;
         }
 
         .call-modal {
-            display: none;
-            position: fixed;
+            height: auto;
             top: 20px;
             right: 20px;
+            left: auto;
+            width: calc(100% - 40px);
+            max-width: 320px;
             background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
             border: 1px solid var(--border-color);
-            z-index: 3000;
-            color: var(--text-primary);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            animation: slideIn 0.3s ease-out;
-            width: 300px;
-            box-sizing: border-box;
-        }
-        .call-modal p {
-            margin: 0 0 15px 0;
-            font-size: 16px;
-            text-align: center;
-        }
-        .call-modal .btn-group {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
-        #call-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            .container { padding: 14px; }
+            #chat-header { flex-direction: column; align-items: stretch; }
+            #call-controls { justify-content: space-between; }
+            .message { max-width: 90%; }
         }
     </style>
 </head>
@@ -400,12 +348,12 @@
     <div class="container">
         <div id="setup-section">
             <h2>FlyChat</h2>
-            
+            <br>
             <div class="welcome-card" id="welcome-box">
                 <h3>Welcome to FlyChat</h3>
-                <p>Simple, secure, and professional real-time communication. Connect and collaborate instantly.</p>
+                <p>Simple, secure, and professional real-time communication.</p>
             </div>
-
+            <br>
             <div id="warning-msg"></div>
             <div id="error-msg"></div>
 
@@ -420,10 +368,10 @@
             <div id="call-controls">
                 <button id="start-call-btn" onclick="initiateCall()">📞 Call</button>
                 <button id="mute-btn" class="btn-icon" onclick="toggleMute()" style="display:none;">🎤 Mute</button>
-                <button id="speaker-btn" class="btn-icon" onclick="toggleAudioOutput()" style="display:none;" title="Switch Audio Output">🔊</button>
+                <button id="speaker-btn" class="btn-icon" onclick="toggleAudioOutput()" style="display:none;">🔊</button>
                 <button id="end-call-btn" class="btn-danger" onclick="endCall()" style="display:none;">Hang Up</button>
+                <button class="btn-danger" onclick="leaveRoom()">Exit</button>
             </div>
-            <button class="btn-danger" onclick="leaveRoom()">Exit</button>
         </div>
 
         <div id="chat" style="display: none;"></div>
@@ -431,30 +379,23 @@
         <div id="message-form">
             <div id="reply-bar">
                 <span id="reply-bar-text">Replying to...</span>
-                <button onclick="cancelReply()" style="background: transparent; color: var(--danger-color); padding: 4px 8px; margin: 0;">✕</button>
+                <button onclick="cancelReply()" style="background: transparent; color: var(--danger-color); padding: 2px 6px;">✕</button>
             </div>
 
             <div id="input-row">
-                <div id="text-controls" style="display: flex; flex: 1; align-items: center; gap: 8px;">
-                    <!-- 1. ഫയൽ ബട്ടൺ -->
+                <div id="text-controls">
                     <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" onchange="handleMediaSelect(event)">
-                    <button class="btn-icon" onclick="document.getElementById('mediaInput').click()" title="Send Image/Video">📁</button>
-                    
-                    <!-- 2. ടെക്സ്റ്റ് ചാറ്റ് ബോക്സ് -->
+                    <button class="btn-icon" onclick="document.getElementById('mediaInput').click()" title="Send Media">📁</button>
                     <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
-                    
-                    <!-- 3. മൈക്ക് ബട്ടൺ -->
-                    <button class="btn-icon" onclick="startRecording()" title="Record Voice">🎤</button>
-                    
-                    <!-- 4. സെൻഡ് ബട്ടൺ -->
+                    <button class="btn-icon" onclick="startRecording()" title="Voice Record">🎤</button>
                     <button onclick="sendMessage()">Send</button>
                 </div>
 
                 <div id="recording-controls">
                     <span id="timer">00:00</span>
-                    <button class="btn-icon" id="pauseBtn" onclick="togglePause()" title="Pause/Resume">⏸️</button>
-                    <button class="btn-danger" onclick="cancelRecording()" title="Cancel Recording">🗑️ Cancel</button>
-                    <button style="background-color: var(--success-color);" onclick="stopAndSendRecording()" title="Send Voice">📤 Send Voice</button>
+                    <button class="btn-icon" id="pauseBtn" onclick="togglePause()">⏸️</button>
+                    <button class="btn-danger" onclick="cancelRecording()">🗑️</button>
+                    <button style="background-color: var(--success-color);" onclick="stopAndSendRecording()">📤 Send</button>
                 </div>
             </div>
         </div>
@@ -462,8 +403,8 @@
 
     <!-- Media Preview Modal -->
     <div id="media-modal">
-        <div id="media-preview-container"></div>
-        <div>
+        <div id="media-preview-container" style="max-width: 90%; max-height: 70vh; margin-bottom: 16px;"></div>
+        <div style="display: flex; gap: 10px;">
             <button style="background-color: var(--success-color);" onclick="confirmSendMedia()">Send</button>
             <button class="btn-danger" onclick="cancelMediaPreview()">Cancel</button>
         </div>
@@ -471,8 +412,8 @@
 
     <!-- Incoming Call Modal -->
     <div id="incoming-call-modal" class="call-modal">
-        <p>📞 Incoming Voice Call...</p>
-        <div class="btn-group">
+        <p style="margin-bottom: 12px; text-align: center;">📞 Incoming Voice Call...</p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
             <button style="background-color: var(--success-color);" onclick="acceptCall()">Accept</button>
             <button class="btn-danger" onclick="rejectCall()">Decline</button>
         </div>
@@ -480,8 +421,8 @@
 
     <!-- Outgoing Call Modal -->
     <div id="outgoing-call-modal" class="call-modal">
-        <p>Calling the user...</p>
-        <div class="btn-group">
+        <p style="margin-bottom: 12px; text-align: center;">Calling user...</p>
+        <div style="display: flex; justify-content: center;">
             <button class="btn-danger" onclick="cancelOutgoingCall()">Cancel</button>
         </div>
     </div>
@@ -503,9 +444,7 @@
 
         let localStream;
         let peerConnection;
-        const config = {
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-        };
+        const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         const remoteAudio = document.getElementById('remote-audio');
         const startCallBtn = document.getElementById('start-call-btn');
@@ -516,45 +455,27 @@
         let audioDevices = [];
         let currentDeviceIndex = 0;
 
-        // Security Validation On Input
         const roomInput = document.getElementById('roomInput');
         const warningMsg = document.getElementById('warning-msg');
 
         roomInput.addEventListener('input', () => {
             const code = roomInput.value.trim();
-            const hasAlpha = /[a-zA-Z]/.test(code);
-            const hasNumber = /[0-9]/.test(code);
-            const hasSpecial = /[^A-Za-z0-9]/.test(code);
-            const hasOnlyLetters = /^[a-zA-Z]+$/.test(code);
-
             if (code.length === 0) {
                 warningMsg.style.display = 'none';
-            } else if (hasOnlyLetters && code.length <= 4) {
-                warningMsg.innerText = "⚠️ Weak (Letters only)";
+            } else if (code.length < 5) {
+                warningMsg.innerText = "⚠️ Short Code";
                 warningMsg.style.display = 'block';
                 warningMsg.style.color = '#f59e0b';
-            } else if (code.length >= 5 && hasAlpha && hasNumber && !hasSpecial) {
-                warningMsg.innerText = "🔵 Moderate (Letters & Numbers)";
-                warningMsg.style.display = 'block';
-                warningMsg.style.color = '#60a5fa';
-            } else if (code.length >= 6 && hasAlpha && hasNumber && hasSpecial) {
-                warningMsg.innerText = "🔒 Perfect! You are secure.";
+            } else {
+                warningMsg.innerText = "🔒 Good Code!";
                 warningMsg.style.display = 'block';
                 warningMsg.style.color = '#10b981';
-            } else if (code.length > 0) {
-                warningMsg.innerText = "ℹ️ Combine Letters, Numbers & Symbols for better security.";
-                warningMsg.style.display = 'block';
-                warningMsg.style.color = '#9ca3af';
             }
         });
 
         function joinRoom() {
             const roomCode = roomInput.value.trim();
-            const errorDiv = document.getElementById('error-msg');
-            errorDiv.style.display = 'none';
-
             if (!roomCode) return;
-
             currentRoom = roomCode;
             socket.emit('join-room', currentRoom);
         }
@@ -577,7 +498,7 @@
             chat.innerHTML = '';
             const sysMsg = document.createElement('p');
             sysMsg.className = 'system';
-            sysMsg.innerText = `Created / Joined room: ${room}`;
+            sysMsg.innerText = `Joined room: ${room}`;
             chat.appendChild(sysMsg);
         });
 
@@ -641,11 +562,7 @@
             reader.onload = function(e) {
                 selectedMedia.data = e.target.result;
                 const container = document.getElementById('media-preview-container');
-                if (isVideo) {
-                    container.innerHTML = `<video src="${selectedMedia.data}" controls></video>`;
-                } else {
-                    container.innerHTML = `<img src="${selectedMedia.data}" alt="Preview">`;
-                }
+                container.innerHTML = isVideo ? `<video src="${selectedMedia.data}" controls style="max-width:100%;"></video>` : `<img src="${selectedMedia.data}" style="max-width:100%;">`;
                 document.getElementById('media-modal').style.display = 'flex';
             };
             reader.readAsDataURL(file);
@@ -674,19 +591,16 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 let mimeType = 'audio/webm';
-                if (!MediaRecorder.isTypeSupported(mimeType)) {
-                    mimeType = 'audio/mp4'; 
-                }
+                if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'audio/mp4';
 
-                mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
+                mediaRecorder = new MediaRecorder(stream, { mimeType });
                 audioChunks = [];
                 isCancelled = false;
 
-                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
-
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                 mediaRecorder.onstop = () => {
                     clearInterval(timerInterval);
-                    stream.getTracks().forEach(track => track.stop());
+                    stream.getTracks().forEach(t => t.stop());
 
                     if (!isCancelled && audioChunks.length > 0) {
                         const audioBlob = new Blob(audioChunks, { type: mimeType });
@@ -708,15 +622,12 @@
                 mediaRecorder.start();
                 secondsElapsed = 0;
                 updateTimerDisplay();
-                timerInterval = setInterval(() => {
-                    secondsElapsed++;
-                    updateTimerDisplay();
-                }, 1000);
+                timerInterval = setInterval(() => { secondsElapsed++; updateTimerDisplay(); }, 1000);
 
                 document.getElementById('text-controls').style.display = 'none';
                 document.getElementById('recording-controls').style.display = 'flex';
             } catch (err) {
-                alert('Microphone access denied or not available.');
+                alert('Microphone access denied.');
             }
         }
 
@@ -728,26 +639,19 @@
                 pauseBtn.innerText = '▶️';
             } else if (mediaRecorder.state === 'paused') {
                 mediaRecorder.resume();
-                timerInterval = setInterval(() => {
-                    secondsElapsed++;
-                    updateTimerDisplay();
-                }, 1000);
+                timerInterval = setInterval(() => { secondsElapsed++; updateTimerDisplay(); }, 1000);
                 pauseBtn.innerText = '⏸️';
             }
         }
 
         function cancelRecording() {
             isCancelled = true;
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
         }
 
         function stopAndSendRecording() {
             isCancelled = false;
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
         }
 
         function updateTimerDisplay() {
@@ -764,12 +668,12 @@
         }
 
         function initiateCall() {
-            document.getElementById('outgoing-call-modal').style.display = 'block';
+            document.getElementById('outgoing-call-modal').style.display = 'flex';
             socket.emit('request-call', { room: currentRoom });
         }
 
         socket.on('incoming-call', () => {
-            document.getElementById('incoming-call-modal').style.display = 'block';
+            document.getElementById('incoming-call-modal').style.display = 'flex';
         });
 
         async function acceptCall() {
@@ -791,7 +695,6 @@
         socket.on('call-accepted', async () => {
             document.getElementById('outgoing-call-modal').style.display = 'none';
             await setupLocalMediaAndConnection();
-            
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
             socket.emit('call-user', { offer, room: currentRoom });
@@ -799,7 +702,7 @@
 
         socket.on('call-rejected', () => {
             document.getElementById('outgoing-call-modal').style.display = 'none';
-            alert("Call was declined.");
+            alert("Call declined.");
         });
 
         async function setupLocalMediaAndConnection() {
@@ -808,22 +711,16 @@
                 createPeerConnection();
                 localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
                 showCallUI();
-                await getAudioOutputDevices();
             } catch (err) {
-                alert('Could not access microphone.');
+                alert('Could not access mic.');
             }
         }
 
         socket.on('call-made', async (data) => {
-            try {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-
-                socket.emit('make-answer', { answer, room: currentRoom });
-            } catch (err) {
-                console.error('Error handling call made:', err);
-            }
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('make-answer', { answer, room: currentRoom });
         });
 
         socket.on('answer-made', async (data) => {
@@ -831,56 +728,22 @@
         });
 
         socket.on('ice-candidate', (candidate) => {
-            if (peerConnection) {
-                peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-            }
+            if (peerConnection) peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
         });
 
         function createPeerConnection() {
             peerConnection = new RTCPeerConnection(config);
-
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    socket.emit('ice-candidate', { candidate: event.candidate, room: currentRoom });
-                }
+            peerConnection.onicecandidate = e => {
+                if (e.candidate) socket.emit('ice-candidate', { candidate: e.candidate, room: currentRoom });
             };
-
-            peerConnection.ontrack = (event) => {
-                remoteAudio.srcObject = event.streams[0];
-            };
+            peerConnection.ontrack = e => remoteAudio.srcObject = e.streams[0];
         }
 
         function toggleMute() {
             if (localStream) {
-                const audioTrack = localStream.getAudioTracks()[0];
-                audioTrack.enabled = !audioTrack.enabled;
-                muteBtn.innerText = audioTrack.enabled ? '🎤 Mute' : '🔇 Unmute';
-            }
-        }
-
-        async function getAudioOutputDevices() {
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                audioDevices = devices.filter(device => device.kind === 'audiooutput');
-            } catch (err) {
-                console.error('Error enumerating devices:', err);
-            }
-        }
-
-        async function toggleAudioOutput() {
-            if (audioDevices.length === 0) return;
-            
-            currentDeviceIndex = (currentDeviceIndex + 1) % audioDevices.length;
-            const selectedDevice = audioDevices[currentDeviceIndex];
-
-            if (typeof remoteAudio.setSinkId === 'function') {
-                try {
-                    await remoteAudio.setSinkId(selectedDevice.deviceId);
-                    speakerBtn.title = `Output: ${selectedDevice.label}`;
-                    speakerBtn.style.color = 'var(--success-color)';
-                } catch (err) {
-                    console.error('Error setting sink ID:', err);
-                }
+                const track = localStream.getAudioTracks()[0];
+                track.enabled = !track.enabled;
+                muteBtn.innerText = track.enabled ? '🎤 Mute' : '🔇 Unmute';
             }
         }
 
@@ -889,41 +752,30 @@
             closeCall();
         }
 
-        socket.on('call-ended', () => {
-            closeCall();
-        });
+        socket.on('call-ended', closeCall);
 
         function closeCall() {
-            if (peerConnection) {
-                peerConnection.close();
-                peerConnection = null;
-            }
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
+            if (peerConnection) { peerConnection.close(); peerConnection = null; }
+            if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
             resetCallUI();
         }
 
         function showCallUI() {
             startCallBtn.style.display = 'none';
-            muteBtn.style.display = 'inline-block';
-            speakerBtn.style.display = 'inline-block';
-            endCallBtn.style.display = 'inline-block';
+            muteBtn.style.display = 'inline-flex';
+            speakerBtn.style.display = 'inline-flex';
+            endCallBtn.style.display = 'inline-flex';
         }
 
         function resetCallUI() {
-            startCallBtn.style.display = 'inline-block';
+            startCallBtn.style.display = 'inline-flex';
             muteBtn.style.display = 'none';
             speakerBtn.style.display = 'none';
             endCallBtn.style.display = 'none';
-            muteBtn.innerText = '🎤 Mute';
-            speakerBtn.style.color = '#fff';
         }
 
         socket.on('receive-message', (data) => {
             const chat = document.getElementById('chat');
-            
             if (data.sender === 'System') {
                 const sysMsg = document.createElement('p');
                 sysMsg.className = 'system';
@@ -931,36 +783,21 @@
                 chat.appendChild(sysMsg);
             } else {
                 const isSent = (data.sender === socket.id);
-                const messageClass = isSent ? 'sent' : 'received';
-                const senderLabel = isSent ? 'You: ' : 'User: ';
-
                 const msgDiv = document.createElement('div');
-                msgDiv.className = `message ${messageClass} new-message`;
+                msgDiv.className = `message ${isSent ? 'sent' : 'received'}`;
 
                 let contentHtml = '';
-                let replyBoxHtml = '';
+                let replyBoxHtml = data.replyTo ? `<div class="reply-box">↩ ${escapeHtml(data.replyTo)}</div>` : '';
 
-                if (data.replyTo) {
-                    replyBoxHtml = `<div class="reply-box">↩ <b>${escapeHtml(data.replyTo)}</b></div>`;
-                }
+                if (data.type === 'image') contentHtml = `<img src="${data.text}">`;
+                else if (data.type === 'video') contentHtml = `<video src="${data.text}" controls></video>`;
+                else if (data.type === 'audio') contentHtml = `<audio controls src="${data.text}"></audio>`;
+                else contentHtml = escapeHtml(data.text);
 
-                if (data.type === 'image') {
-                    contentHtml = `<img src="${data.text}" alt="Image">`;
-                } else if (data.type === 'video') {
-                    contentHtml = `<video src="${data.text}" controls></video>`;
-                } else if (data.type === 'audio') {
-                    contentHtml = `<audio controls src="${data.text}"></audio>`;
-                } else {
-                    contentHtml = escapeHtml(data.text);
-                }
+                msgDiv.innerHTML = `${replyBoxHtml}<strong>${isSent ? 'You: ' : 'User: '}</strong>${contentHtml}<br><span class="reply-btn">Reply</span>`;
 
-                const replyText = data.type === 'text' ? data.text : (data.type.toUpperCase() + ' Media');
-
-                msgDiv.innerHTML = `${replyBoxHtml}<strong>${senderLabel}</strong>${contentHtml}<br><span class="reply-btn">Reply</span>`;
-
-                const replyBtn = msgDiv.querySelector('.reply-btn');
-                replyBtn.addEventListener('click', () => {
-                    setReply(replyText);
+                msgDiv.querySelector('.reply-btn').addEventListener('click', () => {
+                    setReply(data.type === 'text' ? data.text : data.type.toUpperCase());
                 });
 
                 chat.appendChild(msgDiv);
