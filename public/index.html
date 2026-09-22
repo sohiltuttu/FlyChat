@@ -235,7 +235,8 @@
             opacity: 0.8;
         }
 
-        .tick-mark { font-weight: bold; font-size: 12px; }
+        .tick-mark { font-weight: bold; font-size: 12px; color: #38bdf8; }
+        .single-tick { color: #94a3b8; }
 
         .reply-box {
             background: rgba(0, 0, 0, 0.25);
@@ -369,7 +370,7 @@
             <br>
             <div class="welcome-card" id="welcome-box">
                 <h3>Welcome to FlyChat</h3>
-                <p>Simple, secure real-time chat & call.</p>
+                <p>Simple, secure real-time chat & voice calling.</p>
             </div>
             <br>
 
@@ -385,7 +386,7 @@
         <div id="chat-header">
             <span id="room-display" style="font-weight: bold; color: var(--accent-color); font-size: 14px;"></span>
             
-            <!-- നെറ്റ്‌വർക്ക് പിംഗ് മീറ്റർ -->
+            <!-- Network Signal & Ping Meter -->
             <div id="network-status" style="display: none; align-items: center; gap: 6px; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color);">
                 <span id="signal-dot" style="height: 10px; width: 10px; border-radius: 50%; display: inline-block; background-color: #10b981;"></span>
                 <span id="ping-text">0 ms</span>
@@ -468,7 +469,15 @@
             });
         }
 
-        const socket = io();
+        // Socket.io initialization with auto-reconnection configuration
+        const socket = io({
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000
+        });
+
         let currentRoom = "";
         let mediaRecorder;
         let audioChunks = [];
@@ -493,9 +502,15 @@
         const roomInput = document.getElementById('roomInput');
         const warningMsg = document.getElementById('warning-msg');
 
+        socket.on('connect', () => {
+            console.log("Connected to server:", socket.id);
+            if (currentRoom) {
+                socket.emit('join-room', currentRoom);
+            }
+        });
+
         roomInput.addEventListener('input', () => {
             const val = roomInput.value.trim();
-
             document.getElementById('error-msg').style.display = 'none';
 
             if (val.length === 0) {
@@ -520,7 +535,7 @@
                 warningMsg.style.backgroundColor = 'rgba(245, 158, 11, 0.15)';
                 warningMsg.style.border = '1px solid var(--warning-color)';
             } else {
-                warningMsg.innerText = "⚠️ Insecure Code! Someone else might easily guess or join your room. Use a stronger code.";
+                warningMsg.innerText = "⚠️ Insecure Code! Someone else might guess or join your room. Use a stronger code.";
                 warningMsg.style.color = '#f87171';
                 warningMsg.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
                 warningMsg.style.border = '1px solid var(--danger-color)';
@@ -575,6 +590,9 @@
         function sendMessage() {
             const msgInput = document.getElementById('messageInput');
             const msg = msgInput.value.trim();
+
+            if (!socket.connected) socket.connect();
+
             if (msg && currentRoom) {
                 socket.emit('send-message', { 
                     room: currentRoom, 
@@ -776,7 +794,7 @@
                 localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
                 showCallUI();
             } catch (err) {
-                alert('Could not access mic.');
+                alert('Could not access microphone.');
             }
         }
 
@@ -840,6 +858,7 @@
             endCallBtn.style.display = 'none';
         }
 
+        // Live Network Quality & Ping Monitor
         function startNetworkMonitoring() {
             const netStatus = document.getElementById('network-status');
             const signalDot = document.getElementById('signal-dot');
@@ -904,6 +923,12 @@
             renderSingleMessage(data);
         });
 
+        socket.on('update_message_status', (messages) => {
+            const chat = document.getElementById('chat');
+            chat.innerHTML = '';
+            messages.forEach(data => renderSingleMessage(data));
+        });
+
         function renderSingleMessage(data) {
             const chat = document.getElementById('chat');
             if (data.sender === 'System') {
@@ -927,8 +952,8 @@
 
                 let tickHtml = '';
                 if (isSent) {
-                    const isDouble = data.readBy && data.readBy.length >= 2;
-                    tickHtml = `<span class="tick-mark" id="tick-${data.id}">${isDouble ? '✓✓' : '✓'}</span>`;
+                    const isDouble = data.status === 'double_tick';
+                    tickHtml = `<span class="tick-mark ${isDouble ? '' : 'single-tick'}" id="tick-${data.id}">${isDouble ? '✓✓' : '✓'}</span>`;
                 }
 
                 msgDiv.innerHTML = `
@@ -945,20 +970,9 @@
                 });
 
                 chat.appendChild(msgDiv);
-
-                if (!isSent && data.id) {
-                    socket.emit('mark-read', data.id);
-                }
             }
             chat.scrollTop = chat.scrollHeight;
         }
-
-        socket.on('message-read-update', ({ messageId, readByCount }) => {
-            const tickElem = document.getElementById(`tick-${messageId}`);
-            if (tickElem && readByCount >= 2) {
-                tickElem.innerText = '✓✓';
-            }
-        });
 
         function escapeHtml(str) {
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
