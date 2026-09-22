@@ -1,132 +1,79 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
-
 const app = express();
-const server = http.createServer(app);
-
-// Socket.io Setup with Ping / Heartbeat Configuration
-const io = new Server(server, {
-  cors: { origin: "*" },
-  pingTimeout: 60000,    // Keeps connection alive up to 60 seconds of inactivity
-  pingInterval: 25000,   // Sends ping every 25 seconds automatically
+const http = require('http').createServer(app);
+const io = require('socket.io')(http, {
+    maxHttpBufferSize: 200 * 1024 * 1024 // 200 MB Buffer Size Limit
 });
 
-// Serve static files from 'public' folder
-app.use(express.static(path.join(__dirname, 'public')));
-
-// In-Memory Storage for Room Messages
-// Structure: { roomId: [ { id, senderId, text, type, replyTo, status: 'single_tick' | 'double_tick', createdAt } ] }
-let roomMessages = {};
+app.use(express.static('public'));
 
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+    socket.on('join-room', (roomId) => {
+        const room = io.sockets.adapter.rooms.get(roomId);
+        const numClients = room ? room.size : 0;
 
-  // 1. Join Room Event
-  socket.on('join-room', (roomId) => {
-    socket.join(roomId);
-    socket.roomId = roomId;
+        if (numClients >= 2) {
+            socket.emit('room-full', 'Room is full! Maximum 2 users allowed.');
+            return;
+        }
 
-    if (!roomMessages[roomId]) {
-      roomMessages[roomId] = [];
-    }
+        socket.join(roomId);
+        socket.emit('joined', roomId);
+        socket.to(roomId).emit('receive-message', { sender: 'System', text: 'Another user joined the room.' });
+    });
 
-    const clientsInRoom = io.sockets.adapter.rooms.get(roomId);
-    const numClients = clientsInRoom ? clientsInRoom.size : 0;
+    socket.on('leave-room', (roomId) => {
+        socket.leave(roomId);
+        socket.emit('left-room');
+        socket.to(roomId).emit('receive-message', { sender: 'System', text: 'The other user left the room.' });
+    });
 
-    // Notify client that join was successful
-    socket.emit('joined', roomId);
+    socket.on('send-message', (data) => {
+        io.to(data.room).emit('receive-message', { 
+            sender: socket.id, 
+            text: data.message,
+            type: data.type,
+            replyTo: data.replyTo || null
+        });
+    });
 
-    // When 2 or more users are present in the room:
-    // Update all previous single_tick messages to double_tick
-    if (numClients >= 2) {
-      roomMessages[roomId].forEach((msg) => {
-        msg.status = 'double_tick';
-      });
-      io.to(roomId).emit('update_message_status', roomMessages[roomId]);
-    }
+    // WebRTC Signaling and Call Request Events
+    socket.on('request-call', (data) => {
+        socket.to(data.room).emit('incoming-call', { callerId: socket.id });
+    });
 
-    // Send existing room messages to the joined user
-    socket.emit('initial-messages', roomMessages[roomId]);
-  });
+    socket.on('accept-call', (data) => {
+        socket.to(data.room).emit('call-accepted');
+    });
 
-  // 2. Send Message Event
-  socket.on('send-message', (data) => {
-    const { room, message, type, replyTo } = data;
-    const clientsInRoom = io.sockets.adapter.rooms.get(room);
-    const numClients = clientsInRoom ? clientsInRoom.size : 0;
+    socket.on('reject-call', (data) => {
+        socket.to(data.room).emit('call-rejected');
+    });
 
-    // Set double_tick if 2 or more users are in room, otherwise single_tick
-    const messageStatus = numClients >= 2 ? 'double_tick' : 'single_tick';
+    socket.on('call-user', (data) => {
+        socket.to(data.room).emit('call-made', {
+            offer: data.offer,
+            socket: socket.id
+        });
+    });
 
-    const newMessage = {
-      id: Date.now().toString(),
-      sender: socket.id,
-      text: message,
-      type: type || 'text',
-      replyTo: replyTo || null,
-      status: messageStatus,
-      createdAt: new Date()
-    };
+    socket.on('make-answer', (data) => {
+        socket.to(data.room).emit('answer-made', {
+            socket: socket.id,
+            answer: data.answer
+        });
+    });
 
-    if (!roomMessages[room]) roomMessages[room] = [];
-    roomMessages[room].push(newMessage);
+    socket.on('ice-candidate', (data) => {
+        socket.to(data.room).emit('ice-candidate', data.candidate);
+    });
 
-    io.to(room).emit('receive-message', newMessage);
-  });
-
-  // 3. Signaling for WebRTC Calls
-  socket.on('request-call', (data) => {
-    socket.to(data.room).emit('incoming-call');
-  });
-
-  socket.on('accept-call', (data) => {
-    socket.to(data.room).emit('call-accepted');
-  });
-
-  socket.on('reject-call', (data) => {
-    socket.to(data.room).emit('call-rejected');
-  });
-
-  socket.on('call-user', (data) => {
-    socket.to(data.room).emit('call-made', { offer: data.offer });
-  });
-
-  socket.on('make-answer', (data) => {
-    socket.to(data.room).emit('answer-made', { answer: data.answer });
-  });
-
-  socket.on('ice-candidate', (data) => {
-    socket.to(data.room).emit('ice-candidate', data.candidate);
-  });
-
-  socket.on('end-call', (data) => {
-    socket.to(data.room).emit('call-ended');
-  });
-
-  // 4. Leave Room Event: Deletes ONLY double_tick messages; single_tick messages stay
-  socket.on('leave-room', (roomId) => {
-    cleanUpDoubleTicks(roomId || socket.roomId);
-    socket.leave(roomId || socket.roomId);
-    socket.emit('left-room');
-  });
-
-  // 5. Disconnect Event
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-    cleanUpDoubleTicks(socket.roomId);
-  });
-
-  function cleanUpDoubleTicks(roomId) {
-    if (roomId && roomMessages[roomId]) {
-      // Keeps single_tick messages intact while removing double_tick ones
-      roomMessages[roomId] = roomMessages[roomId].filter(msg => msg.status === 'single_tick');
-    }
-  }
+    socket.on('end-call', (data) => {
+        socket.to(data.room).emit('call-ended');
+    });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+http.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
