@@ -64,12 +64,6 @@
             border: 1px solid rgba(77, 166, 255, 0.1);
         }
 
-        .logo {
-            font-size: 40px;
-            margin-bottom: 15px;
-            display: block;
-        }
-
         .welcome-card h3 {
             color: var(--accent-color);
             margin-top: 0;
@@ -202,7 +196,6 @@
             position: relative;
         }
 
-        /* പുതിയ മെസ്സേജിന് മാത്രം ആനിമേഷൻ വരാൻ വേണ്ടി */
         .new-message {
             animation: slideIn 0.3s ease-out;
         }
@@ -307,6 +300,7 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
+            gap: 8px;
         }
         #messageInput {
             flex: 1;
@@ -406,7 +400,6 @@
             <h2>FlyChat</h2>
             
             <div class="welcome-card" id="welcome-box">
-                <span class="logo">🚀</span>
                 <h3>Welcome to FlyChat</h3>
                 <p>Simple, secure, and professional real-time communication. Connect and collaborate instantly.</p>
             </div>
@@ -440,11 +433,18 @@
             </div>
 
             <div id="input-row">
-                <div id="text-controls" style="display: flex; flex: 1; align-items: center;">
-                    <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
+                <div id="text-controls" style="display: flex; flex: 1; align-items: center; gap: 8px;">
+                    <!-- 1. ഫയൽ ബട്ടൺ -->
                     <input type="file" id="mediaInput" accept="image/*,video/*" style="display: none;" onchange="handleMediaSelect(event)">
                     <button class="btn-icon" onclick="document.getElementById('mediaInput').click()" title="Send Image/Video">📁</button>
+                    
+                    <!-- 2. ടെക്സ്റ്റ് ചാറ്റ് ബോക്സ് -->
+                    <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    
+                    <!-- 3. മൈക്ക് ബട്ടൺ -->
                     <button class="btn-icon" onclick="startRecording()" title="Record Voice">🎤</button>
+                    
+                    <!-- 4. സെൻഡ് ബട്ടൺ -->
                     <button onclick="sendMessage()">Send</button>
                 </div>
 
@@ -530,15 +530,15 @@
             } else if (hasOnlyLetters && code.length <= 4) {
                 warningMsg.innerText = "⚠️ Weak (Letters only)";
                 warningMsg.style.display = 'block';
-                warningMsg.style.color = '#f59e0b'; // Yellow
+                warningMsg.style.color = '#f59e0b';
             } else if (code.length >= 5 && hasAlpha && hasNumber && !hasSpecial) {
                 warningMsg.innerText = "🔵 Moderate (Letters & Numbers)";
                 warningMsg.style.display = 'block';
-                warningMsg.style.color = '#60a5fa'; // Blue
+                warningMsg.style.color = '#60a5fa';
             } else if (code.length >= 6 && hasAlpha && hasNumber && hasSpecial) {
                 warningMsg.innerText = "🔒 Perfect! You are secure.";
                 warningMsg.style.display = 'block';
-                warningMsg.style.color = '#10b981'; // Green
+                warningMsg.style.color = '#10b981';
             } else if (code.length > 0) {
                 warningMsg.innerText = "ℹ️ Combine Letters, Numbers & Symbols for better security.";
                 warningMsg.style.display = 'block';
@@ -956,7 +956,6 @@
 
                 msgDiv.innerHTML = `${replyBoxHtml}<strong>${senderLabel}</strong>${contentHtml}<br><span class="reply-btn">Reply</span>`;
 
-                // റിപ്ലൈ ബട്ടൺ ക്ലിക്ക് ചെയ്യുമ്പോൾ ഫങ്ഷൻ പ്രവർത്തിക്കാൻ
                 const replyBtn = msgDiv.querySelector('.reply-btn');
                 replyBtn.addEventListener('click', () => {
                     setReply(replyText);
