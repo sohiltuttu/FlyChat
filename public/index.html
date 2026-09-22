@@ -33,7 +33,10 @@
             color: var(--text-primary);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
         }
 
         body {
@@ -57,6 +60,7 @@
             flex-direction: column;
             gap: 12px;
             overflow: hidden;
+            transition: height 0.2s ease-out;
         }
 
         h2 {
@@ -87,14 +91,13 @@
 
         #warning-msg, #error-msg {
             text-align: center;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             display: none;
-            padding: 10px 14px;
-            border-radius: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
             line-height: 1.4;
-            width: 100%;
-            margin-top: 8px;
+            transition: all 0.2s ease;
         }
 
         #error-msg {
@@ -114,6 +117,7 @@
             border: 1px solid var(--border-color);
         }
 
+        /* Prevent Auto-Zoom on iOS */
         input[type="text"], input[type="file"], button {
             font-size: 16px !important;
         }
@@ -127,6 +131,7 @@
             background-color: var(--bg-color);
             color: #fff;
             outline: none;
+            transition: border-color 0.2s ease;
         }
 
         #roomInput:focus {
@@ -145,9 +150,12 @@
             align-items: center;
             justify-content: center;
             white-space: nowrap;
+            transition: transform 0.1s ease, background-color 0.2s ease;
         }
 
-        button:active { transform: scale(0.95); }
+        button:active {
+            transform: scale(0.95);
+        }
 
         .btn-danger { background-color: var(--danger-color); }
         .btn-icon { background-color: var(--border-color); color: var(--text-primary); padding: 10px; }
@@ -181,9 +189,16 @@
             scroll-behavior: smooth;
         }
 
+        /* Smooth Message Animation */
         @keyframes messagePop {
-            0% { opacity: 0; transform: translateY(12px) scale(0.95); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
+            0% {
+                opacity: 0;
+                transform: translateY(12px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .message {
@@ -194,7 +209,6 @@
             font-size: 14px;
             line-height: 1.4;
             animation: messagePop 0.25s ease-out forwards;
-            position: relative;
         }
 
         .sent {
@@ -217,6 +231,7 @@
             font-style: italic;
             align-self: center;
             font-size: 12px;
+            animation: messagePop 0.2s ease-out forwards;
         }
 
         .message img, .message video {
@@ -224,19 +239,6 @@
             border-radius: 8px;
             margin-top: 4px;
         }
-
-        .msg-meta {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 4px;
-            font-size: 10px;
-            margin-top: 4px;
-            opacity: 0.8;
-        }
-
-        .tick-mark { font-weight: bold; font-size: 12px; color: #38bdf8; }
-        .single-tick { color: #94a3b8; }
 
         .reply-box {
             background: rgba(0, 0, 0, 0.25);
@@ -316,6 +318,7 @@
             font-size: 15px;
         }
 
+        /* Modals */
         #media-modal, .call-modal {
             display: none;
             position: fixed;
@@ -326,22 +329,6 @@
             justify-content: center;
             flex-direction: column;
             padding: 16px;
-        }
-
-        .spinner {
-            width: 32px;
-            height: 32px;
-            border: 4px solid var(--border-color);
-            border-top: 4px solid #ffffff;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            display: none;
-            margin-top: 12px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         .call-modal {
@@ -370,28 +357,20 @@
             <br>
             <div class="welcome-card" id="welcome-box">
                 <h3>Welcome to FlyChat</h3>
-                <p>Simple, secure real-time chat & voice calling.</p>
+                <p>Simple, secure real-time chat & call.</p>
             </div>
             <br>
+            <div id="warning-msg"></div>
+            <div id="error-msg"></div>
 
             <div id="room-selection">
                 <input type="text" id="roomInput" placeholder="Enter Room Code">
                 <button onclick="joinRoom()">Join / Create</button>
-                
-                <div id="warning-msg"></div>
-                <div id="error-msg"></div>
             </div>
         </div>
 
         <div id="chat-header">
             <span id="room-display" style="font-weight: bold; color: var(--accent-color); font-size: 14px;"></span>
-            
-            <!-- Network Signal & Ping Meter -->
-            <div id="network-status" style="display: none; align-items: center; gap: 6px; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color);">
-                <span id="signal-dot" style="height: 10px; width: 10px; border-radius: 50%; display: inline-block; background-color: #10b981;"></span>
-                <span id="ping-text">0 ms</span>
-            </div>
-
             <div id="call-controls">
                 <button id="start-call-btn" onclick="initiateCall()">📞 Call</button>
                 <button id="mute-btn" class="btn-icon" onclick="toggleMute()" style="display:none;">🎤 Mute</button>
@@ -432,10 +411,9 @@
     <div id="media-modal">
         <div id="media-preview-container" style="max-width: 90%; max-height: 60vh; margin-bottom: 12px;"></div>
         <div style="display: flex; gap: 10px;">
-            <button id="send-media-btn" style="background-color: var(--success-color);" onclick="confirmSendMedia()">Send</button>
+            <button style="background-color: var(--success-color);" onclick="confirmSendMedia()">Send</button>
             <button class="btn-danger" onclick="cancelMediaPreview()">Cancel</button>
         </div>
-        <div id="upload-spinner" class="spinner"></div>
     </div>
 
     <!-- Incoming Call Modal -->
@@ -459,6 +437,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // iOS Visual Viewport Keyboard Adjustment
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 const mainContainer = document.getElementById('main-container');
@@ -469,15 +448,7 @@
             });
         }
 
-        // Socket.io initialization with auto-reconnection configuration
-        const socket = io({
-            reconnection: true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 5000,
-            timeout: 20000
-        });
-
+        const socket = io();
         let currentRoom = "";
         let mediaRecorder;
         let audioChunks = [];
@@ -490,7 +461,6 @@
 
         let localStream;
         let peerConnection;
-        let statsInterval = null;
         const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         const remoteAudio = document.getElementById('remote-audio');
@@ -502,16 +472,9 @@
         const roomInput = document.getElementById('roomInput');
         const warningMsg = document.getElementById('warning-msg');
 
-        socket.on('connect', () => {
-            console.log("Connected to server:", socket.id);
-            if (currentRoom) {
-                socket.emit('join-room', currentRoom);
-            }
-        });
-
+        // Dynamic Real-Time Security & Strength Evaluator
         roomInput.addEventListener('input', () => {
             const val = roomInput.value.trim();
-            document.getElementById('error-msg').style.display = 'none';
 
             if (val.length === 0) {
                 warningMsg.style.display = 'none';
@@ -524,18 +487,23 @@
 
             warningMsg.style.display = 'block';
 
+            // High Security: Special Characters + (Letters OR Numbers)
             if (hasSpecials && (hasLetters || hasNumbers)) {
                 warningMsg.innerText = "🔒 Highly Secure Code! Your chat is safe.";
                 warningMsg.style.color = '#34d399';
                 warningMsg.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
                 warningMsg.style.border = '1px solid var(--success-color)';
-            } else if (hasLetters && hasNumbers) {
+            }
+            // Moderate Security: Numbers + Letters mixed
+            else if (hasLetters && hasNumbers) {
                 warningMsg.innerText = "⚡ Moderate Security! Consider adding special characters (@, #, $).";
                 warningMsg.style.color = '#fbbf24';
                 warningMsg.style.backgroundColor = 'rgba(245, 158, 11, 0.15)';
                 warningMsg.style.border = '1px solid var(--warning-color)';
-            } else {
-                warningMsg.innerText = "⚠️ Insecure Code! Someone else might guess or join your room. Use a stronger code.";
+            }
+            // Weak/Insecure Security: Just letters (like abcd) or just numbers
+            else {
+                warningMsg.innerText = "⚠️ Insecure Code! Someone else might easily guess or join your room. Use a stronger code.";
                 warningMsg.style.color = '#f87171';
                 warningMsg.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
                 warningMsg.style.border = '1px solid var(--danger-color)';
@@ -545,8 +513,6 @@
         function joinRoom() {
             const roomCode = roomInput.value.trim();
             if (!roomCode) return;
-            
-            document.getElementById('error-msg').style.display = 'none';
             currentRoom = roomCode;
             socket.emit('join-room', currentRoom);
         }
@@ -567,12 +533,15 @@
             
             const chat = document.getElementById('chat');
             chat.innerHTML = '';
+            const sysMsg = document.createElement('p');
+            sysMsg.className = 'system';
+            sysMsg.innerText = `Joined room: ${room}`;
+            chat.appendChild(sysMsg);
         });
 
         socket.on('room-full', (msg) => {
-            warningMsg.style.display = 'none';
             const errorDiv = document.getElementById('error-msg');
-            errorDiv.innerText = "⚠️ " + msg;
+            errorDiv.innerText = msg;
             errorDiv.style.display = 'block';
         });
 
@@ -590,9 +559,6 @@
         function sendMessage() {
             const msgInput = document.getElementById('messageInput');
             const msg = msgInput.value.trim();
-
-            if (!socket.connected) socket.connect();
-
             if (msg && currentRoom) {
                 socket.emit('send-message', { 
                     room: currentRoom, 
@@ -641,24 +607,14 @@
 
         function confirmSendMedia() {
             if (selectedMedia.data && currentRoom) {
-                const spinner = document.getElementById('upload-spinner');
-                const sendBtn = document.getElementById('send-media-btn');
-
-                spinner.style.display = 'block';
-                sendBtn.disabled = true;
-
-                setTimeout(() => {
-                    socket.emit('send-message', { 
-                        room: currentRoom, 
-                        message: selectedMedia.data, 
-                        type: selectedMedia.type,
-                        replyTo: activeReply 
-                    });
-                    spinner.style.display = 'none';
-                    sendBtn.disabled = false;
-                    cancelMediaPreview();
-                    cancelReply();
-                }, 400);
+                socket.emit('send-message', { 
+                    room: currentRoom, 
+                    message: selectedMedia.data, 
+                    type: selectedMedia.type,
+                    replyTo: activeReply 
+                });
+                cancelMediaPreview();
+                cancelReply();
             }
         }
 
@@ -666,7 +622,6 @@
             selectedMedia = { data: null, type: null };
             document.getElementById('mediaInput').value = '';
             document.getElementById('media-modal').style.display = 'none';
-            document.getElementById('upload-spinner').style.display = 'none';
         }
 
         async function startRecording() {
@@ -794,7 +749,7 @@
                 localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
                 showCallUI();
             } catch (err) {
-                alert('Could not access microphone.');
+                alert('Could not access mic.');
             }
         }
 
@@ -839,7 +794,6 @@
         function closeCall() {
             if (peerConnection) { peerConnection.close(); peerConnection = null; }
             if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-            stopNetworkMonitoring();
             resetCallUI();
         }
 
@@ -848,7 +802,6 @@
             muteBtn.style.display = 'inline-flex';
             speakerBtn.style.display = 'inline-flex';
             endCallBtn.style.display = 'inline-flex';
-            startNetworkMonitoring();
         }
 
         function resetCallUI() {
@@ -858,78 +811,7 @@
             endCallBtn.style.display = 'none';
         }
 
-        // Live Network Quality & Ping Monitor
-        function startNetworkMonitoring() {
-            const netStatus = document.getElementById('network-status');
-            const signalDot = document.getElementById('signal-dot');
-            const pingText = document.getElementById('ping-text');
-
-            netStatus.style.display = 'flex';
-
-            statsInterval = setInterval(async () => {
-                if (!peerConnection) return;
-
-                try {
-                    const stats = await peerConnection.getStats();
-                    let currentPing = null;
-
-                    stats.forEach(report => {
-                        if (report.type === 'remote-inbound-rtp' && report.roundTripTime !== undefined) {
-                            currentPing = report.roundTripTime * 1000;
-                        } else if (report.type === 'candidate-pair' && report.state === 'succeeded' && report.currentRoundTripTime !== undefined) {
-                            currentPing = report.currentRoundTripTime * 1000;
-                        }
-                    });
-
-                    if (currentPing !== null) {
-                        const pingMs = Math.round(currentPing);
-                        pingText.innerText = `${pingMs} ms`;
-
-                        if (pingMs < 100) {
-                            signalDot.style.backgroundColor = '#10b981'; // Green (Excellent)
-                            pingText.style.color = '#10b981';
-                        } else if (pingMs <= 250) {
-                            signalDot.style.backgroundColor = '#3b82f6'; // Blue (Good)
-                            pingText.style.color = '#3b82f6';
-                        } else if (pingMs <= 400) {
-                            signalDot.style.backgroundColor = '#f59e0b'; // Yellow (Weak)
-                            pingText.style.color = '#f59e0b';
-                        } else {
-                            signalDot.style.backgroundColor = '#ef4444'; // Red (Bad)
-                            pingText.style.color = '#ef4444';
-                        }
-                    }
-                } catch (err) {
-                    console.error("Error fetching WebRTC stats:", err);
-                }
-            }, 1000);
-        }
-
-        function stopNetworkMonitoring() {
-            if (statsInterval) {
-                clearInterval(statsInterval);
-                statsInterval = null;
-            }
-            document.getElementById('network-status').style.display = 'none';
-        }
-
-        socket.on('initial-messages', (messages) => {
-            const chat = document.getElementById('chat');
-            chat.innerHTML = '';
-            messages.forEach(data => renderSingleMessage(data));
-        });
-
         socket.on('receive-message', (data) => {
-            renderSingleMessage(data);
-        });
-
-        socket.on('update_message_status', (messages) => {
-            const chat = document.getElementById('chat');
-            chat.innerHTML = '';
-            messages.forEach(data => renderSingleMessage(data));
-        });
-
-        function renderSingleMessage(data) {
             const chat = document.getElementById('chat');
             if (data.sender === 'System') {
                 const sysMsg = document.createElement('p');
@@ -940,7 +822,6 @@
                 const isSent = (data.sender === socket.id);
                 const msgDiv = document.createElement('div');
                 msgDiv.className = `message ${isSent ? 'sent' : 'received'}`;
-                msgDiv.id = `msg-${data.id}`;
 
                 let contentHtml = '';
                 let replyBoxHtml = data.replyTo ? `<div class="reply-box">↩ ${escapeHtml(data.replyTo)}</div>` : '';
@@ -950,20 +831,7 @@
                 else if (data.type === 'audio') contentHtml = `<audio controls src="${data.text}"></audio>`;
                 else contentHtml = escapeHtml(data.text);
 
-                let tickHtml = '';
-                if (isSent) {
-                    const isDouble = data.status === 'double_tick';
-                    tickHtml = `<span class="tick-mark ${isDouble ? '' : 'single-tick'}" id="tick-${data.id}">${isDouble ? '✓✓' : '✓'}</span>`;
-                }
-
-                msgDiv.innerHTML = `
-                    ${replyBoxHtml}
-                    <strong>${isSent ? 'You: ' : 'User: '}</strong>${contentHtml}<br>
-                    <div class="msg-meta">
-                        <span class="reply-btn">Reply</span>
-                        ${tickHtml}
-                    </div>
-                `;
+                msgDiv.innerHTML = `${replyBoxHtml}<strong>${isSent ? 'You: ' : 'User: '}</strong>${contentHtml}<br><span class="reply-btn">Reply</span>`;
 
                 msgDiv.querySelector('.reply-btn').addEventListener('click', () => {
                     setReply(data.type === 'text' ? data.text : data.type.toUpperCase());
@@ -972,7 +840,7 @@
                 chat.appendChild(msgDiv);
             }
             chat.scrollTop = chat.scrollHeight;
-        }
+        });
 
         function escapeHtml(str) {
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
