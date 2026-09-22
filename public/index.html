@@ -33,10 +33,7 @@
             color: var(--text-primary);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
         }
 
         body {
@@ -60,7 +57,6 @@
             flex-direction: column;
             gap: 12px;
             overflow: hidden;
-            transition: height 0.2s ease-out;
         }
 
         h2 {
@@ -91,13 +87,14 @@
 
         #warning-msg, #error-msg {
             text-align: center;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             display: none;
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 10px 14px;
+            border-radius: 10px;
             line-height: 1.4;
-            transition: all 0.2s ease;
+            width: 100%;
+            margin-top: 8px;
         }
 
         #error-msg {
@@ -117,7 +114,6 @@
             border: 1px solid var(--border-color);
         }
 
-        /* Prevent Auto-Zoom on iOS */
         input[type="text"], input[type="file"], button {
             font-size: 16px !important;
         }
@@ -131,7 +127,6 @@
             background-color: var(--bg-color);
             color: #fff;
             outline: none;
-            transition: border-color 0.2s ease;
         }
 
         #roomInput:focus {
@@ -150,12 +145,9 @@
             align-items: center;
             justify-content: center;
             white-space: nowrap;
-            transition: transform 0.1s ease, background-color 0.2s ease;
         }
 
-        button:active {
-            transform: scale(0.95);
-        }
+        button:active { transform: scale(0.95); }
 
         .btn-danger { background-color: var(--danger-color); }
         .btn-icon { background-color: var(--border-color); color: var(--text-primary); padding: 10px; }
@@ -189,16 +181,9 @@
             scroll-behavior: smooth;
         }
 
-        /* Smooth Message Animation */
         @keyframes messagePop {
-            0% {
-                opacity: 0;
-                transform: translateY(12px) scale(0.95);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            0% { opacity: 0; transform: translateY(12px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .message {
@@ -209,6 +194,7 @@
             font-size: 14px;
             line-height: 1.4;
             animation: messagePop 0.25s ease-out forwards;
+            position: relative;
         }
 
         .sent {
@@ -231,7 +217,6 @@
             font-style: italic;
             align-self: center;
             font-size: 12px;
-            animation: messagePop 0.2s ease-out forwards;
         }
 
         .message img, .message video {
@@ -239,6 +224,18 @@
             border-radius: 8px;
             margin-top: 4px;
         }
+
+        .msg-meta {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            font-size: 10px;
+            margin-top: 4px;
+            opacity: 0.8;
+        }
+
+        .tick-mark { font-weight: bold; font-size: 12px; }
 
         .reply-box {
             background: rgba(0, 0, 0, 0.25);
@@ -318,7 +315,6 @@
             font-size: 15px;
         }
 
-        /* Modals */
         #media-modal, .call-modal {
             display: none;
             position: fixed;
@@ -329,6 +325,22 @@
             justify-content: center;
             flex-direction: column;
             padding: 16px;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+            margin-top: 12px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .call-modal {
@@ -360,12 +372,14 @@
                 <p>Simple, secure real-time chat & call.</p>
             </div>
             <br>
-            <div id="warning-msg"></div>
-            <div id="error-msg"></div>
 
             <div id="room-selection">
                 <input type="text" id="roomInput" placeholder="Enter Room Code">
                 <button onclick="joinRoom()">Join / Create</button>
+                
+                <!-- വാണിംഗ് മെസ്സേജും എറർ മെസ്സേജും ഇവിടെ ഇൻപുട്ട് ബോക്സിന് തൊട്ടു താഴെയാക്കി -->
+                <div id="warning-msg"></div>
+                <div id="error-msg"></div>
             </div>
         </div>
 
@@ -411,9 +425,10 @@
     <div id="media-modal">
         <div id="media-preview-container" style="max-width: 90%; max-height: 60vh; margin-bottom: 12px;"></div>
         <div style="display: flex; gap: 10px;">
-            <button style="background-color: var(--success-color);" onclick="confirmSendMedia()">Send</button>
+            <button id="send-media-btn" style="background-color: var(--success-color);" onclick="confirmSendMedia()">Send</button>
             <button class="btn-danger" onclick="cancelMediaPreview()">Cancel</button>
         </div>
+        <div id="upload-spinner" class="spinner"></div>
     </div>
 
     <!-- Incoming Call Modal -->
@@ -437,7 +452,6 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // iOS Visual Viewport Keyboard Adjustment
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 const mainContainer = document.getElementById('main-container');
@@ -472,9 +486,11 @@
         const roomInput = document.getElementById('roomInput');
         const warningMsg = document.getElementById('warning-msg');
 
-        // Dynamic Real-Time Security & Strength Evaluator
         roomInput.addEventListener('input', () => {
             const val = roomInput.value.trim();
+
+            // സെക്യൂരിറ്റി വാണിംഗ് ടൈപ്പ് ചെയ്യുമ്പോൾ മെസ്സേജ് ക്ലിയർ ചെയ്യുന്നു
+            document.getElementById('error-msg').style.display = 'none';
 
             if (val.length === 0) {
                 warningMsg.style.display = 'none';
@@ -487,22 +503,17 @@
 
             warningMsg.style.display = 'block';
 
-            // High Security: Special Characters + (Letters OR Numbers)
             if (hasSpecials && (hasLetters || hasNumbers)) {
                 warningMsg.innerText = "🔒 Highly Secure Code! Your chat is safe.";
                 warningMsg.style.color = '#34d399';
                 warningMsg.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
                 warningMsg.style.border = '1px solid var(--success-color)';
-            }
-            // Moderate Security: Numbers + Letters mixed
-            else if (hasLetters && hasNumbers) {
+            } else if (hasLetters && hasNumbers) {
                 warningMsg.innerText = "⚡ Moderate Security! Consider adding special characters (@, #, $).";
                 warningMsg.style.color = '#fbbf24';
                 warningMsg.style.backgroundColor = 'rgba(245, 158, 11, 0.15)';
                 warningMsg.style.border = '1px solid var(--warning-color)';
-            }
-            // Weak/Insecure Security: Just letters (like abcd) or just numbers
-            else {
+            } else {
                 warningMsg.innerText = "⚠️ Insecure Code! Someone else might easily guess or join your room. Use a stronger code.";
                 warningMsg.style.color = '#f87171';
                 warningMsg.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
@@ -513,6 +524,9 @@
         function joinRoom() {
             const roomCode = roomInput.value.trim();
             if (!roomCode) return;
+            
+            // പുതിയ ജോയിൻ റെക്വസ്റ്റ് കൊടുക്കുമ്പോൾ പഴയ എററുകൾ മാറ്റുന്നു
+            document.getElementById('error-msg').style.display = 'none';
             currentRoom = roomCode;
             socket.emit('join-room', currentRoom);
         }
@@ -533,15 +547,13 @@
             
             const chat = document.getElementById('chat');
             chat.innerHTML = '';
-            const sysMsg = document.createElement('p');
-            sysMsg.className = 'system';
-            sysMsg.innerText = `Joined room: ${room}`;
-            chat.appendChild(sysMsg);
         });
 
+        // റൂം ഫുൾ ആണെങ്കിൽ ഈ എറർ ബോക്സ് കൃത്യമായി ഇൻപുട്ടിൻ്റെ താഴെ പ്രത്യക്ഷപ്പെടും
         socket.on('room-full', (msg) => {
+            warningMsg.style.display = 'none'; // സെക്യൂരിറ്റി മെസ്സേജ് ഉണ്ടെങ്കിൽ ഹൈഡ് ചെയ്യും
             const errorDiv = document.getElementById('error-msg');
-            errorDiv.innerText = msg;
+            errorDiv.innerText = "⚠️ " + msg;
             errorDiv.style.display = 'block';
         });
 
@@ -607,14 +619,24 @@
 
         function confirmSendMedia() {
             if (selectedMedia.data && currentRoom) {
-                socket.emit('send-message', { 
-                    room: currentRoom, 
-                    message: selectedMedia.data, 
-                    type: selectedMedia.type,
-                    replyTo: activeReply 
-                });
-                cancelMediaPreview();
-                cancelReply();
+                const spinner = document.getElementById('upload-spinner');
+                const sendBtn = document.getElementById('send-media-btn');
+
+                spinner.style.display = 'block';
+                sendBtn.disabled = true;
+
+                setTimeout(() => {
+                    socket.emit('send-message', { 
+                        room: currentRoom, 
+                        message: selectedMedia.data, 
+                        type: selectedMedia.type,
+                        replyTo: activeReply 
+                    });
+                    spinner.style.display = 'none';
+                    sendBtn.disabled = false;
+                    cancelMediaPreview();
+                    cancelReply();
+                }, 400);
             }
         }
 
@@ -622,6 +644,7 @@
             selectedMedia = { data: null, type: null };
             document.getElementById('mediaInput').value = '';
             document.getElementById('media-modal').style.display = 'none';
+            document.getElementById('upload-spinner').style.display = 'none';
         }
 
         async function startRecording() {
@@ -811,7 +834,17 @@
             endCallBtn.style.display = 'none';
         }
 
+        socket.on('initial-messages', (messages) => {
+            const chat = document.getElementById('chat');
+            chat.innerHTML = '';
+            messages.forEach(data => renderSingleMessage(data));
+        });
+
         socket.on('receive-message', (data) => {
+            renderSingleMessage(data);
+        });
+
+        function renderSingleMessage(data) {
             const chat = document.getElementById('chat');
             if (data.sender === 'System') {
                 const sysMsg = document.createElement('p');
@@ -822,6 +855,7 @@
                 const isSent = (data.sender === socket.id);
                 const msgDiv = document.createElement('div');
                 msgDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+                msgDiv.id = `msg-${data.id}`;
 
                 let contentHtml = '';
                 let replyBoxHtml = data.replyTo ? `<div class="reply-box">↩ ${escapeHtml(data.replyTo)}</div>` : '';
@@ -831,15 +865,39 @@
                 else if (data.type === 'audio') contentHtml = `<audio controls src="${data.text}"></audio>`;
                 else contentHtml = escapeHtml(data.text);
 
-                msgDiv.innerHTML = `${replyBoxHtml}<strong>${isSent ? 'You: ' : 'User: '}</strong>${contentHtml}<br><span class="reply-btn">Reply</span>`;
+                let tickHtml = '';
+                if (isSent) {
+                    const isDouble = data.readBy && data.readBy.length >= 2;
+                    tickHtml = `<span class="tick-mark" id="tick-${data.id}">${isDouble ? '✓✓' : '✓'}</span>`;
+                }
+
+                msgDiv.innerHTML = `
+                    ${replyBoxHtml}
+                    <strong>${isSent ? 'You: ' : 'User: '}</strong>${contentHtml}<br>
+                    <div class="msg-meta">
+                        <span class="reply-btn">Reply</span>
+                        ${tickHtml}
+                    </div>
+                `;
 
                 msgDiv.querySelector('.reply-btn').addEventListener('click', () => {
                     setReply(data.type === 'text' ? data.text : data.type.toUpperCase());
                 });
 
                 chat.appendChild(msgDiv);
+
+                if (!isSent && data.id) {
+                    socket.emit('mark-read', data.id);
+                }
             }
             chat.scrollTop = chat.scrollHeight;
+        }
+
+        socket.on('message-read-update', ({ messageId, readByCount }) => {
+            const tickElem = document.getElementById(`tick-${messageId}`);
+            if (tickElem && readByCount >= 2) {
+                tickElem.innerText = '✓✓';
+            }
         });
 
         function escapeHtml(str) {
