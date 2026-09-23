@@ -2474,9 +2474,10 @@ function updateRecordingTime() {
 
 
 function stopRecordingTimer() {
-
-  clearInterval(recordingTimer);
-  recordingTimer = null;
+  if(recordingTimer) {
+    clearInterval(recordingTimer);
+    recordingTimer = null;
+  }
 }
 
 
@@ -2489,22 +2490,24 @@ pauseRecordingBtn.addEventListener(
     if (
       mediaRecorder.state === "recording"
     ) {
-
       mediaRecorder.pause();
-
-      pauseRecordingBtn.textContent =
-        "Resume";
+      pauseRecordingBtn.textContent = "Resume";
+      
+      // Stop the timer from running when paused
+      stopRecordingTimer();
 
     } else if (
       mediaRecorder.state === "paused"
     ) {
-
       mediaRecorder.resume();
-
-      pauseRecordingBtn.textContent =
-        "Pause";
+      pauseRecordingBtn.textContent = "Pause";
+      
+      // Start the timer again when resumed
+      recordingTimer = setInterval(() => {
+        recordingSeconds++;
+        updateRecordingTime();
+      }, 1000);
     }
-
   }
 );
 
