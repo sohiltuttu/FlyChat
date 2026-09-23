@@ -242,7 +242,10 @@ button { cursor: pointer; }
     </div>
     <button id="joinBtn" class="primary-btn">Join Room</button>
     <div class="note">Use a room code that you can safely share with the other person.</div>
-    <div class="credits">This website created by Sohil and Thasni</div>
+    <div class="credits">
+      This website created by Sohil Salim and Thasni<br><br>
+      <a href="#" id="aboutBtn" style="color: #666; text-decoration: underline; font-size: 12px; transition: 0.2s;">About Us</a>
+    </div>
   </div>
 </section>
 
@@ -304,6 +307,26 @@ button { cursor: pointer; }
     </div>
   </div>
 </section>
+
+<!-- ABOUT MODAL -->
+<div id="aboutModal" class="modal-backdrop">
+  <div class="modal" style="text-align: center; padding: 35px 25px;">
+    <div style="font-size: 45px; margin-bottom: 15px;">✈️</div> 
+    
+    <h2>About FlyChat</h2>
+    <p style="margin-bottom: 22px;">A secure and private space for chatting and audio calling. Developed by Sohil Salim.</p>
+    
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+      <a href="mailto:sohiltuttu@gmail.com" style="color: var(--text); background: #181818; padding: 12px; border-radius: 12px; text-decoration: none; font-size: 13px; border: 1px solid var(--border); transition: 0.2s;">📧 Email</a>
+      <a href="https://linkedin.com/in/sohil-salim-1a93a7325" target="_blank" style="color: var(--text); background: #181818; padding: 12px; border-radius: 12px; text-decoration: none; font-size: 13px; border: 1px solid var(--border); transition: 0.2s;">🔗 LinkedIn Profile</a>
+      <a href="https://www.instagram.com/sxhhile?stkn=MWRrejR3ZmF5dnoydg%3D%3D&utm_source=qr" target="_blank" style="color: var(--text); background: #181818; padding: 12px; border-radius: 12px; text-decoration: none; font-size: 13px; border: 1px solid var(--border); transition: 0.2s;">📸 Instagram Profile</a>
+    </div>
+    
+    <div class="modal-buttons">
+      <button id="closeAboutBtn" class="modal-cancel" style="width: 100%;">Close</button>
+    </div>
+  </div>
+</div>
 
 <div id="safetyModal" class="modal-backdrop">
   <div class="modal">
@@ -707,6 +730,22 @@ socket.on("left-room", () => {
   roomInput.value = ""; securityBox.classList.remove("visible"); pendingJoinRoom = "";
   updateRoomStatus(0); showToast("You left the room.");
 });
+
+// ABOUT MODAL LOGIC
+const aboutBtn = document.getElementById("aboutBtn");
+const aboutModal = document.getElementById("aboutModal");
+const closeAboutBtn = document.getElementById("closeAboutBtn");
+
+if (aboutBtn && aboutModal && closeAboutBtn) {
+  aboutBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    aboutModal.classList.add("visible");
+  });
+
+  closeAboutBtn.addEventListener("click", () => {
+    aboutModal.classList.remove("visible");
+  });
+}
 
 socket.on("connect", () => { if (currentRoom) socket.emit("rejoin-room", currentRoom); });
 setInterval(() => { if (socket.connected) socket.emit("keepalive"); }, 5 * 60 * 1000);
