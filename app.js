@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 3000;
 
-// Room History Storage
+// Room history storage
 const roomsData = {};
 
 function roomCount(roomId) {
@@ -39,19 +39,20 @@ function systemMessage(roomId, text) {
   });
 }
 
-// ഡിലീറ്റ് ചെയ്യാനുള്ള കൃത്യമായ ലോജിക് 
+// Deletion logic: a room is removed only after two users have been in it
+// together and everyone has since left.
 function checkAndDeleteRoom(roomId) {
   const room = roomsData[roomId];
   if (!room) return;
-  
+
   const count = roomCount(roomId);
-  
+
   if (count === 0 && room.hasReachedTwo) {
-    // രണ്ടുപേരും റൂമിൽ വന്നിട്ടുണ്ടായിരുന്നു, ഇപ്പോൾ ആരുമില്ല. അതിനാൽ ഡിലീറ്റ് ചെയ്യുന്നു.
+    // Both users were present and now nobody is left, so delete the room.
     delete roomsData[roomId];
     console.log(`[Action] Room '${roomId}' deleted. Both users have seen the messages and left.`);
   } else if (count === 0 && !room.hasReachedTwo) {
-    // ഒരാൾ മാത്രമേ വന്നിട്ടുള്ളൂ, അയാൾ എക്സിറ്റ് ആയാലും മെസ്സേജ് ഡിലീറ്റ് ചെയ്യില്ല.
+    // Only one user ever joined. Keep the messages until the 2nd user arrives.
     console.log(`[Action] Room '${roomId}' is empty but kept alive. Waiting for the 2nd user.`);
   }
 }
@@ -74,7 +75,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // റൂം ഡാറ്റ സെറ്റ് ചെയ്യുന്നു 
+    // Set up room data
     if (!roomsData[roomId]) {
       roomsData[roomId] = { messages: [], hasReachedTwo: false };
     }
@@ -83,8 +84,8 @@ io.on("connection", (socket) => {
     socket.currentRoom = roomId;
 
     const currentUsers = roomCount(roomId);
-    
-    // റൂമിൽ 2 പേർ ആയാൽ flag മാറ്റുന്നു
+
+    // Flag the room once two users are present
     if (currentUsers === 2) {
       roomsData[roomId].hasReachedTwo = true;
       console.log(`[Status] Room '${roomId}' is now FULL (2 users). Messages will be deleted when both leave.`);
@@ -92,7 +93,7 @@ io.on("connection", (socket) => {
 
     socket.emit("joined", roomId);
 
-    // പഴയ മെസ്സേജ് സേവ് ആയിട്ടുണ്ടെങ്കിൽ അത് കൊടുക്കുന്നു 
+    // Send saved history, if any
     if (roomsData[roomId].messages && roomsData[roomId].messages.length > 0) {
       socket.emit("chat-history", roomsData[roomId].messages);
       console.log(`[Status] Sent saved history to user joining Room '${roomId}'.`);
@@ -143,11 +144,11 @@ io.on("connection", (socket) => {
 
     const msg = {
       ...data,
-      senderId: data.userId || socket.id, 
+      senderId: data.userId || socket.id,
       timestamp: data.timestamp || Date.now()
     };
-    
-    // മെസ്സേജ് സെർവറിൽ സേവ് ചെയ്യുന്നു 
+
+    // Save the message on the server
     if (roomsData[socket.currentRoom]) {
       roomsData[socket.currentRoom].messages.push(msg);
     }
@@ -174,11 +175,11 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("call-ended");
     updateRoomCount(roomId);
 
-    // റൂമിൽ നിന്ന് ആൾ ഇറങ്ങുമ്പോൾ ഡിലീറ്റ് ചെയ്യണോ എന്ന് നോക്കുന്നു 
+    // Check whether the room should be deleted now
     checkAndDeleteRoom(roomId);
   });
 
-  // CALL CONTROLS...
+  // CALL CONTROLS
   socket.on("call-request", () => {
     if (!socket.currentRoom) return;
     socket.to(socket.currentRoom).emit("incoming-call");
@@ -234,5 +235,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`FlyChat is running on port ${PORT}...`);
+  console.log(`Flyvo is running on port ${PORT}...`);
 });
